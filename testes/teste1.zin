@@ -1,0 +1,38 @@
+int x, xx, xxx, xxxxx;
+char y;
+
+int f(int b){
+     int c;
+     while(b<4){
+			   int z;
+			   z=4;	
+		       b=b+z;
+    }	  
+    return b; 
+
+}
+int g(int b){
+     int c;
+     while(b<4){
+          { c=b-4;
+           f(4);
+		  } 
+     
+	     {  
+			read b;
+			{
+			
+				{
+					c=c+1;
+				}
+				c=c*4+5+b/2;
+			}
+		 }
+		if(a<b ||b>4)
+			write a;
+	 }
+}
+
+int main(int a){
+;
+}

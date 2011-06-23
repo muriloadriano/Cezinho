@@ -1,0 +1,32 @@
+/*Programa para calcular a soma dos fatoriais dos n primeiros numeros inteiros positivos*/
+int fat(int n){
+   if(n>1)
+   return(n*fat(n-1));
+   return(1);
+}
+
+int soma(int n){
+    if(n>1) return(fat(n,2)+soma(n-1)); /*erro semantico: numero de parametros de chamada difrente do numero de parametros declarados */
+    return(1);
+
+}
+
+int main(){
+   int n;
+   write "digite um numero inteiro positivo menor ou igual a 10";
+   writeln;
+   read n;
+   if(n>0){
+          write "a soma dos fatorias dos ";
+          write n;
+          write "numeros inteiros positivos e ";
+          write  soma(n);
+   }
+   else{
+	write "Nao ha soma para os "; 
+        write  n;
+        write "primeiros numeros inteiros negativos";
+        writeln;
+       }
+       return(1);
+}

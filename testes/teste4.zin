@@ -1,0 +1,7 @@
+/* verificando se os comentarios
+estao funcionando direitinho.. */
+
+int main(){
+int x; /* se estiver tudo ok****/
+int y; /***** nao deve dar nenhum /** erro de compilacao aqui.. */
+}

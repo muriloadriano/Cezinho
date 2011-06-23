@@ -1,0 +1,9 @@
+/* verificando se acha constantes tipo char com mais de um caracter. */
+char foo(){ 
+	write "@@@@@";
+	return 'aa';
+}
+
+int main(){
+	int vaiDarMerd@aqui;
+}

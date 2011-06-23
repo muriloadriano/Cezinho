@@ -1,0 +1,9 @@
+/* verificando se acha caracteres invalidos tipo um @ fora de um comentario ou string.. */
+char foo(){ 
+	write "@@@@@";
+	return 'a';
+}
+
+int main(){
+	int vaiDarMerd@aqui;
+}

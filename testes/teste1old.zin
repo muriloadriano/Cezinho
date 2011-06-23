@@ -1,0 +1,41 @@
+int x;
+char y;
+int main(int a){
+;
+}
+int c;
+int f(int b){
+     int c;
+     if(b<4){
+			   int z;
+			   z=4;	
+		       c=b+z;
+	}	  
+     else
+          c=b-4;
+     
+
+}
+int g(int b){
+     int c;
+     while(b<4){
+          { c=b-4;
+           f(4);
+		  } 
+     
+	     {  
+			read b;
+			++c;
+			c++;
+			{
+				c--;
+				{
+					--c;
+				}
+				c=c*4+5*++b/2;
+			}
+		 }
+		if(a<b ||b>4)
+			write a;
+	 }
+}

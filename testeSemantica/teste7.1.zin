@@ -1,0 +1,14 @@
+/* Programa correto para testar escopo. Uma variavel c e declarada em diferentes escopos. Uma variavel global x e declarada como sendo um vetor de inteiros. No final do programa um bloco e criado e x Ž re-declarada nesse bloco como sendo uma variavel inteira. Ao final do bloco, a variavel vetor x deve voltar a valer e um comando de escrita write x[2] deve ser aceito. */
+int x[6], y[6], z[6];
+int main(int a){
+   /*Leitura */
+    int c, b, d,e ;
+    char x, y,z;
+    read c; read b; read d; read e;
+    read x; read y; read z;
+    if(c>= (c+d+b+e)/4 &&(x<y && y<z) || (x>=z && d!=y)) /* erro semantico: tipos diferentes */
+		write "ok ";
+    else 
+       write "nao serve";
+    return(1);
+}

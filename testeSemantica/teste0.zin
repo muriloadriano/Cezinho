@@ -1,0 +1,6 @@
+int main(){
+int x;
+int y;
+char z;
+int vet[10];
+}

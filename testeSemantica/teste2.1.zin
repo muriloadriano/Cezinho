@@ -1,0 +1,48 @@
+int x[6], y[6], z[6];
+
+int leitura(){
+   char i;
+     i=0;
+     while(i<6){
+          write "digite o valor de x[";
+          write i;
+          write "]:";
+          read x[i]; /* erro semantico: char usado para indexar vetor*/
+          writeln;
+          write "digite o valor de y[";
+          write i;
+          write "]:";
+          read y[i];
+          i=i+1;
+     }
+     return(1);
+} 
+int soma(){
+	int i;
+	i=0;
+        while (i<6){ 
+         z[i]=x[i]+y[i];
+          i=i+1;
+        }
+       return(1);
+}
+int imprime(){
+      int i;
+      i=0;
+      write "O vetor soma e: ";
+      while(i<6){
+          write "soma[";
+          write i;
+          write "] = ";
+          write z[i];
+          write ", ";
+          i=i+1;
+      }
+      return(1);
+}
+
+int main(){
+     leitura();
+     soma();
+     imprime();
+}

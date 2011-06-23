@@ -1,0 +1,6 @@
+/* verificando se as strings tao beleza.. */
+
+int main(){
+	int x, y;
+	write "EU SOU UMA STRING!\n\n \tE \" ESSE CODIGO TA OK..";
+}

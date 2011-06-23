@@ -1,0 +1,7 @@
+/* verificando se os comentarios
+estao funcionando direitinho.. */
+
+int main(){
+int x; /* se est /*iver tudo ok****/
+int y; /***** nesse vai dar merda 
+}

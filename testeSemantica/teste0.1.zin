@@ -1,0 +1,22 @@
+int fudeu()
+{
+	return 1;
+}
+
+int god(int x)
+{
+	return x;
+}
+
+char ggg(int x)
+{
+	return 'x';
+}
+
+int main(){
+	
+	fudeu();
+	god(1);
+	
+	return 1;
+}

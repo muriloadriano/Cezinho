@@ -1,0 +1,46 @@
+/* Programa correto para testar escopo. Uma variavel c e declarada em diferentes escopos. Uma variavel global x e declarada como sendo um vetor de inteiros. No final do programa um bloco e criado e x Ž re-declarada nesse bloco como sendo uma variavel inteira. Ao final do bloco, a variavel vetor x deve voltar a valer e um comando de escrita write x[2] deve ser aceito. */
+int x[6], y[6], z[6];
+int main(int a){
+  { /*Leitura */
+    int c;
+     c=0;
+     while(c<6){
+          write "digite o valor de x[";
+          write c;
+          write "]:";
+          read x[c];
+          writeln;
+          write "digite o valor de y[";
+          write c;
+          write "]:";
+          read y[c];
+          z[c]=x[c]+y[c];
+          c=c+1;
+     }
+  { int c;
+     writeln;
+     c=0;
+     write "Valor do vetor soma: ";
+     while(c<6){
+	write "z[" ;
+        write c;
+        write "]=";
+        write z[c];
+        write " ";
+        c=c+1;
+     }
+  }
+{int x;
+   x=0;
+   c=0;
+   writeln;
+   while (c<6) x=z[c];
+    write " a soma dos elementos do vetor soma: ";
+   write x;
+  writeln;
+}
+}
+x=2+3; /* erro semantico: o nome x volta a ser o nome do vetor global. Aqui ocorre um erro de checagem de tipo */
+
+writeln;
+}

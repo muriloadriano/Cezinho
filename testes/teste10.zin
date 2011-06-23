@@ -1,0 +1,30 @@
+int x;
+int z;
+int g(int a ){
+  x=a;
+  write "Este e um teste";
+  write a+a/a;
+}
+int c;
+int f(int b[], int a[10]){
+     int c;
+     if(b<4)
+       c=b*b;
+     else
+          c=b-4;
+     return c*c;
+}
+int g(int b){
+     int c;
+     while(b<4){
+          c=b-4;
+		  f(b*c,c);
+		  if(b==1);
+     }
+     read b;
+     c=c*4+5+b/2;
+
+}
+int main(int a){
+int x,h,y;
+}

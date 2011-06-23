@@ -1,0 +1,31 @@
+/* Este programa testa comentario e vetores*/
+int x[6], y[6], z[6];
+int main(int a){
+     int c;
+     c=0;
+     while(c<6){
+          write "digite o valor de x[";
+          write c;
+          write "]:";
+          read x[c];
+          writeln;
+          write "digite o valor de y[";
+          write c;
+          write "]:";
+          read y[c];
+          z[c]=x[c]+y[c];
+          c=c+1;
+     }
+     writeln;
+     c=0;
+     write "Valor do vetor soma: ";
+     while(c<6){
+	write "z[" ;
+        write c;
+        write "]=";
+        write z[c];
+        write " ";
+        c=c+1;
+    }
+    writeln;
+}

@@ -1,0 +1,56 @@
+/*Programas sem erros semanticos*/
+int x[6], y[6], z[6];
+
+int leitura(){
+    char v;
+    int i;
+     i=0;
+     while(i<6){
+          v='x';
+          write "digite o valor de ";
+          write v;
+          write "[";
+          write i;
+          write "]:";
+          read x[i];
+          writeln;
+          v='y';
+          write "digite o valor de  ";
+          write v;
+          write  "[";
+          write i;
+          write "]:";
+          read y[i];
+          i=i+1;
+     }
+     return(1);
+} 
+int soma(){
+	int i;
+	i=0;
+        while (i<6){ 
+         z[i]=x[i]+y[i];
+          i=i+1;
+        }
+       return(1);
+}
+int imprime(){
+      int i;
+      i=0;
+      write "O vetor soma e: ";
+      while(i<6){
+          write "soma[";
+          write i;
+          write "] = ";
+          write z[i];
+          write ", ";
+          i=i+1;
+      }
+      return(1);
+}
+
+int main(){
+     leitura();
+     soma();
+     imprime();
+}
