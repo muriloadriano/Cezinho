@@ -13,10 +13,13 @@ char ggg(int x)
 	return 'x';
 }
 
+int ggg() { return 1; }
+
 int main(){
 	
-	fudeu();
+	int c;
 	god(1);
 	
+	c = ggg(1);
 	return 1;
 }

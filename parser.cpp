@@ -1551,21 +1551,21 @@ yyreduce:
 
 /* Line 1464 of yacc.c  */
 #line 78 "cezinho-parser.y"
-    { (yyval.node) = (yyvsp[(4) - (4)].node); 				((VarDecl*)(yyvsp[(2) - (4)].node))->setDataType( (yyvsp[(1) - (4)].datatype) );										(yyval.node)->add( (yyvsp[(2) - (4)].node) ); }
+    { (yyval.node) = (yyvsp[(4) - (4)].node); ((VarDecl*)(yyvsp[(2) - (4)].node))->setDataType( (yyvsp[(1) - (4)].datatype) ); (yyval.node)->add( (yyvsp[(2) - (4)].node) ); }
     break;
 
   case 4:
 
 /* Line 1464 of yacc.c  */
 #line 79 "cezinho-parser.y"
-    { (yyval.node) = (yyvsp[(4) - (4)].node); 				((FuncDecl*)(yyvsp[(3) - (4)].node))->setFuncName( (yyvsp[(2) - (4)].lxval) ); ((FuncDecl*)(yyvsp[(3) - (4)].node))->setDataType( (yyvsp[(1) - (4)].datatype) );	(yyval.node)->add( (yyvsp[(3) - (4)].node) ); }
+    { (yyval.node) = (yyvsp[(4) - (4)].node); ((FuncDecl*)(yyvsp[(3) - (4)].node))->setFuncName( (yyvsp[(2) - (4)].lxval) ); ((FuncDecl*)(yyvsp[(3) - (4)].node))->setDataType( (yyvsp[(1) - (4)].datatype) ); (yyval.node)->add( (yyvsp[(3) - (4)].node) ); }
     break;
 
   case 5:
 
 /* Line 1464 of yacc.c  */
 #line 80 "cezinho-parser.y"
-    { (yyval.node) = new ASTNode(); 	((FuncDecl*)(yyvsp[(3) - (3)].node))->setFuncName( (yyvsp[(2) - (3)].lxval) ); ((FuncDecl*)(yyvsp[(3) - (3)].node))->setDataType( (yyvsp[(1) - (3)].datatype) );	(yyval.node)->add( (yyvsp[(3) - (3)].node) ); }
+    { (yyval.node) = new ASTNode(); ((FuncDecl*)(yyvsp[(3) - (3)].node))->setFuncName( (yyvsp[(2) - (3)].lxval) ); ((FuncDecl*)(yyvsp[(3) - (3)].node))->setDataType( (yyvsp[(1) - (3)].datatype) );	(yyval.node)->add( (yyvsp[(3) - (3)].node) ); }
     break;
 
   case 6:
@@ -1586,14 +1586,14 @@ yyreduce:
 
 /* Line 1464 of yacc.c  */
 #line 86 "cezinho-parser.y"
-    { (yyval.node) = (yyvsp[(1) - (3)].node);			  (yyval.node)->add( new DeclIdentifier((yyvsp[(3) - (3)].lxval)) ); }
+    { (yyval.node) = (yyvsp[(1) - (3)].node); (yyval.node)->add( new DeclIdentifier((yyvsp[(3) - (3)].lxval)) ); }
     break;
 
   case 9:
 
 /* Line 1464 of yacc.c  */
 #line 87 "cezinho-parser.y"
-    { (yyval.node) = (yyvsp[(1) - (6)].node);			  (yyval.node)->add( new DeclIdentifier((yyvsp[(3) - (6)].lxval), (ConstExpr*)(yyvsp[(5) - (6)].node) ) ); }
+    { (yyval.node) = (yyvsp[(1) - (6)].node); (yyval.node)->add( new DeclIdentifier((yyvsp[(3) - (6)].lxval), (ConstExpr*)(yyvsp[(5) - (6)].node) ) ); }
     break;
 
   case 10:

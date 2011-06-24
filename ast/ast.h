@@ -65,9 +65,14 @@ class ASTNode {
 		int node_location;
 	public:
 		ASTNode(){ child.clear(); }
+		
 		void add( ASTNode* a ){ child.push_back( a ); }
-		void set_location( int lineno ){ node_location = lineno; }
-		void reverse(){ std::reverse( child.begin(), child.end() ); }
+		
+		void set_location( int lineno ) { node_location = lineno; }
+		
+		void reverse() { 
+			std::reverse( child.begin(), child.end() ); 
+		}
 		
 		virtual void walk( int depth ){
 			IDENT( depth )
@@ -259,7 +264,10 @@ class FuncDecl : public ASTNode {
 			child[1] = block;
 		}
 		
-		void setFuncName( std::string* func_ident ){ func_name = func_ident; }
+		void setFuncName( std::string* func_ident ) { 
+			func_name = func_ident;
+		}
+		
 		void setDataType( DataType dt ){ func_type = dt; }
 		
 		DataType getType() { return this->func_type; }
@@ -267,6 +275,16 @@ class FuncDecl : public ASTNode {
 		
 		void walk( int depth ){
 			IDENT( depth );
+			
+			if (func_symbol_tab.find(*func_name) != func_symbol_tab.end()) {
+				std::string error = "Redeclaração da função " + *func_name + ".";
+				
+				yyerror(error.c_str());
+			}
+			else {
+				func_symbol_tab[*func_name] = this;
+			}
+			
 			std::cout << "declarando funcao " << *(func_name) << ", tipo ";
 			switch( func_type ){
 				case INT_T: std::cout << "int "; break;
@@ -284,34 +302,42 @@ class FuncCall : public Expression {
 	protected:
 		std::string* func_identifier;
 	public:
-												/* --- procura o tipo da funcao na tabela de simbolos.. */
-		FuncCall( std::string* func_name )
-		{
-			if (func_symbol_tab.find(*func_name) != func_symbol_tab.end()) {
-				FuncDecl* func = func_symbol_tab[*func_name];
 		
-				if (func->getParamList() != NULL) {
-					yyerror("A função NomeDaFuncao recebe os parametros x, y, z.");
-				}
-				
-				this->expr_type = func->getType();
-				this->func_identifier = func_name;
-			}
-			else yyerror("A função NomeDaFuncao não existe.");
+		FuncCall( std::string* func_name, ArgList* args = NULL) 
+		{ 	
+			child.resize(1); 
+			child[0] = args;
+			
+			this->func_identifier = func_name;
 		}
 		
-		FuncCall( std::string* func_name, ArgList* args ) 
-		{ 
-			if (func_symbol_tab.find(*func_name) != func_symbol_tab.end()) {
-				FuncDecl* func = func_symbol_tab[*func_name];
+		void walk( int depth ){
+			IDENT( depth );
+			std::cout << "chamando funcao " << *(func_identifier) << std::endl;
+			if (func_symbol_tab.find(*func_identifier) != func_symbol_tab.end()) {
+				FuncDecl* func = func_symbol_tab[*func_identifier];
+				ArgList* args = static_cast<ArgList*>(child[0]);
 		
-				if (func->getParamList() != NULL) {
-					yyerror("A função NomeDaFuncao não recebe parametros");
+				if (func->getParamList() == NULL && args != NULL) {
+					std::string error = "A função ``" + *func_identifier + 
+						"'' não recebe parâmetros.";
+					
+					yyerror(error.c_str());
 				}
-				else if (func->getParamList()->getChild().size() != args->getChild().size()) {
-					yyerror("A função NomeDaFuncao não recebe esse número de parâmetros");
+				else if (func->getParamList() != NULL && args == NULL) {
+					std::string error = "A função ``" + *func_identifier + 
+						"'' recebe parâmetros.";
+					
+					yyerror(error.c_str());
 				}
-				else {
+				else if ((func->getParamList() != NULL && args != NULL) && 
+					(func->getParamList()->getChild().size() != args->getChild().size())) {
+					std::string error = "A função ``" + *func_identifier + 
+						"'' não recebe esse número de parâmetros.";
+					
+					yyerror(error.c_str());
+				}
+				else if (func->getParamList() != NULL && args != NULL) {
 					const std::vector<ASTNode*>& paramChildren = func->getParamList()->getChild();
 					const std::vector<ASTNode*>& argChildren = args->getChild();
 					
@@ -321,23 +347,23 @@ class FuncCall : public Expression {
 						param = static_cast<Param*>(paramChildren[i]);
 						arg   = static_cast<Expression*>(argChildren[i]);
 						
-						if (param->getType() != arg->getType()) yyerror("Deu merda na passagem de parametros seu porra!");
+						if (param->getType() != arg->getType()) {
+							std::string error = "Na chamada de função ``" + *func_identifier + 
+								"'': tipos de parâmetros incompatíveis.";
+								
+							yyerror(error.c_str());
+						}
 					}
 				}
 				
 				this->expr_type = func->getType();
-				this->func_identifier = func_name;
 			}
-			else yyerror("A função NomeDaFuncao não existe.");
+			else {
+				std::string error = "A função ``" + *func_identifier + "'' não existe.";
+				yyerror(error.c_str());
+			}
 			
-			child.resize(1); 
-			child[0] = args;
-		}
-		
-		void walk( int depth ){
-			IDENT( depth );
-			std::cout << "chamando funcao " << *(func_identifier) << std::endl;
-			for( size_t i = 0; i < child.size(); i++ ) child[i]->walk( depth+1 );
+			if (child[0] != NULL) child[0]->walk(depth + 1);
 		}
 };
 

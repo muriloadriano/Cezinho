@@ -71,20 +71,20 @@ ASTNode* root;
 %%
 
 Program:
-		Decls													{ root = $1; root->reverse(); root->walk(0); }
+		Decls						{ root = $1; root->reverse(); root->walk(0); }
 ;
 
 Decls:
-		Type VarDecl ';' Decls				{ $$ = $4; 				((VarDecl*)$2)->setDataType( $1 );										$$->add( $2 ); }
-		| Type ID FuncDecl Decls 			{ $$ = $4; 				((FuncDecl*)$3)->setFuncName( $2 ); ((FuncDecl*)$3)->setDataType( $1 );	$$->add( $3 ); }
-		| Type MAIN FuncDecl				{ $$ = new ASTNode(); 	((FuncDecl*)$3)->setFuncName( $2 ); ((FuncDecl*)$3)->setDataType( $1 );	$$->add( $3 ); }
+		Type VarDecl ';' Decls				{ $$ = $4; ((VarDecl*)$2)->setDataType( $1 ); $$->add( $2 ); }
+		| Type ID FuncDecl Decls 			{ $$ = $4; ((FuncDecl*)$3)->setFuncName( $2 ); ((FuncDecl*)$3)->setDataType( $1 ); $$->add( $3 ); }
+		| Type MAIN FuncDecl				{ $$ = new ASTNode(); ((FuncDecl*)$3)->setFuncName( $2 ); ((FuncDecl*)$3)->setDataType( $1 );	$$->add( $3 ); }
 ;
 
 VarDecl:
-		ID														{ $$ = new VarDecl(); $$->add( new DeclIdentifier($1) ); }
-		| ID '[' Constant ']'									{ $$ = new VarDecl(); $$->add( new DeclIdentifier($1, (ConstExpr*)$3 ) ); }
-		| VarDecl ',' ID										{ $$ = $1;			  $$->add( new DeclIdentifier($3) ); }
-		| VarDecl ',' ID '[' Constant ']'						{ $$ = $1;			  $$->add( new DeclIdentifier($3, (ConstExpr*)$5 ) ); }
+		ID						{ $$ = new VarDecl(); $$->add( new DeclIdentifier($1) ); }
+		| ID '[' Constant ']'				{ $$ = new VarDecl(); $$->add( new DeclIdentifier($1, (ConstExpr*)$3 ) ); }
+		| VarDecl ',' ID				{ $$ = $1; $$->add( new DeclIdentifier($3) ); }
+		| VarDecl ',' ID '[' Constant ']'		{ $$ = $1; $$->add( new DeclIdentifier($3, (ConstExpr*)$5 ) ); }
 ;
 
 FuncDecl:
