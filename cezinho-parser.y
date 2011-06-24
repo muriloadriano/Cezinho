@@ -88,122 +88,122 @@ VarDecl:
 ;
 
 FuncDecl:
-		'(' ParamDecList ')' Block								{ $$ = new FuncDecl( (ParamList*)$2, (Block*)$4 ); }
-		| '(' ')' Block											{ $$ = new FuncDecl( NULL, (Block*)$3 ); }
+		'(' ParamDecList ')' Block			{ $$ = new FuncDecl( (ParamList*)$2, (Block*)$4 ); }
+		| '(' ')' Block					{ $$ = new FuncDecl( NULL, (Block*)$3 ); }
 ;
 
 ParamDecList:
-		Type ID													{ $$ = new ParamList(); $$->add( new Param( $1, $2 ) ); }
-		| Type ID '[' ']'										{ $$ = new ParamList(); $$->add( new Param( ($1==INT_T)?INT_ARRAY_T:CHAR_ARRAY_T, $2 ) ); }
-		| ParamDecList ',' Type ID								{ $$ = $1; 					$$->add( new Param( $3, $4 ) );	}
-		| ParamDecList ',' Type ID '[' ']'						{ $$ = $1; 					$$->add( new Param( ($3==INT_T)?INT_ARRAY_T:CHAR_ARRAY_T, $4 ) ); }
+		Type ID						{ $$ = new ParamList(); $$->add( new Param( $1, $2 ) ); }
+		| Type ID '[' ']'				{ $$ = new ParamList(); $$->add( new Param( ($1==INT_T)?INT_ARRAY_T:CHAR_ARRAY_T, $2 ) ); }
+		| ParamDecList ',' Type ID			{ $$ = $1; 					$$->add( new Param( $3, $4 ) );	}
+		| ParamDecList ',' Type ID '[' ']'		{ $$ = $1; 					$$->add( new Param( ($3==INT_T)?INT_ARRAY_T:CHAR_ARRAY_T, $4 ) ); }
 ;
 
 Block:
-		'{' VarDeclList StmtList '}'							{ $$ = new Block( (VarDeclList*)$2, (StatementList*)$3 ); }
-		| '{' VarDeclList '}'									{ $$ = new Block( (VarDeclList*)$2 ); }
-		| '{' StmtList '}'										{ $$ = new Block( (StatementList*)$2 ); }
+		'{' VarDeclList StmtList '}'			{ $$ = new Block( (VarDeclList*)$2, (StatementList*)$3 ); }
+		| '{' VarDeclList '}'				{ $$ = new Block( (VarDeclList*)$2 ); }
+		| '{' StmtList '}'				{ $$ = new Block( (StatementList*)$2 ); }
 ;
 
 VarDeclList:
-		Type VarDecl ';'										{ $$ = new VarDeclList(); ((VarDecl*)$2)->setDataType($1); $$->add($2); }
-		| VarDeclList Type VarDecl ';'							{ $$ = $1;				  ((VarDecl*)$3)->setDataType($2); $$->add( $3 );  }
+		Type VarDecl ';'				{ $$ = new VarDeclList(); ((VarDecl*)$2)->setDataType($1); $$->add($2); }
+		| VarDeclList Type VarDecl ';'			{ $$ = $1;				  ((VarDecl*)$3)->setDataType($2); $$->add( $3 );  }
 ;
 
 Type:
-		INT														{ $$ = INT_T; }
-		| CHAR													{ $$ = CHAR_T; }
+		INT						{ $$ = INT_T; }
+		| CHAR						{ $$ = CHAR_T; }
 ;
 
 StmtList:
-		Stmt													{ $$ = new StatementList(); $$->add( $1 ); }
-		| StmtList Stmt											{ $$ = $1;					$$->add( $2 ); }
+		Stmt						{ $$ = new StatementList(); $$->add( $1 ); }
+		| StmtList Stmt					{ $$ = $1;					$$->add( $2 ); }
 ;
 
 Stmt:
-		';'														{ $$ = new Statement(); }
-		| Expr ';'												{ $$ = $1; }
-		| RETURN Expr ';'										{ $$ = new Return( (Expression*)$2 ); }
-		| READ ID ';'											{ $$ = new Read( new Identifier( $2 ) ); }
-		| READ ID '[' Expr ']' ';'								{ $$ = new Read( new Identifier( $2, (Expression*)$4) ); }
-		| WRITE Expr ';'										{ $$ = new Write( (Expression*)$2 ); }
-		| WRITELN ';'											{ $$ = new Write( new ConstExpr( CHAR_ARRAY_T, &cz_new_line ) ); }
-		| BREAK ';'												{ $$ = new Break(); }
-		| IF '(' Expr ')' Stmt									{ $$ = new If( (Expression*)$3, (Statement*)$5 ); }
-		| IF '(' Expr ')' Stmt ELSE Stmt						{ $$ = new If( (Expression*)$3, (Statement*)$5, (Statement*)$7 ); }
-		| WHILE '(' Expr ')' Stmt								{ $$ = new While( (Expression*)$3, (Statement*)$5 ); }
-		| Block													{ $$ = $1; }
+		';'						{ $$ = new Statement(); }
+		| Expr ';'					{ $$ = $1; }
+		| RETURN Expr ';'				{ $$ = new Return( (Expression*)$2 ); }
+		| READ ID ';'					{ $$ = new Read( new Identifier( $2 ) ); }
+		| READ ID '[' Expr ']' ';'			{ $$ = new Read( new Identifier( $2, (Expression*)$4) ); }
+		| WRITE Expr ';'				{ $$ = new Write( (Expression*)$2 ); }
+		| WRITELN ';'					{ $$ = new Write( new ConstExpr( CHAR_ARRAY_T, &cz_new_line ) ); }
+		| BREAK ';'					{ $$ = new Break(); }
+		| IF '(' Expr ')' Stmt				{ $$ = new If( (Expression*)$3, (Statement*)$5 ); }
+		| IF '(' Expr ')' Stmt ELSE Stmt		{ $$ = new If( (Expression*)$3, (Statement*)$5, (Statement*)$7 ); }
+		| WHILE '(' Expr ')' Stmt			{ $$ = new While( (Expression*)$3, (Statement*)$5 ); }
+		| Block						{ $$ = $1; }
 ;
 
 Expr:
-		UnaryExpr '=' Expr										{ 	
-																	Identifier* aux = dynamic_cast<Identifier*>($1);
-																	if( aux == NULL ) yyerror( "Lado esquerdo de uma atribuicao deve ser um identificador." );
-																	else $$ = new Assignment( (Identifier*)$1, (Expression*)$3 );
-																}
-		| BinaryExpr											{ $$ = $1; }
+		UnaryExpr '=' Expr				{ 	
+									Identifier* aux = dynamic_cast<Identifier*>($1);
+									if( aux == NULL ) yyerror( "Lado esquerdo de uma atribuicao deve ser um identificador." );
+									else $$ = new Assignment( (Identifier*)$1, (Expression*)$3 );
+								}
+		| BinaryExpr					{ $$ = $1; }
 ;
 
 BinaryExpr:
-		BinaryExpr BinOp UnaryExpr								{ $$ = new BinaryExpr( $2, (BinaryExpr*)$1, (UnaryExpr*)$3 ); }
-		| UnaryExpr												{ $$ = $1; }
+		BinaryExpr BinOp UnaryExpr			{ $$ = new BinaryExpr( $2, (BinaryExpr*)$1, (UnaryExpr*)$3 ); }
+		| UnaryExpr					{ $$ = $1; }
 ;
 
 UnaryExpr:
-		UnaryOp UnaryExpr										{ $$ = new UnaryExpr( $1, (UnaryExpr*)$2 ); }
-		| PostFixExpr											{ $$ = $1; }
+		UnaryOp UnaryExpr				{ $$ = new UnaryExpr( $1, (UnaryExpr*)$2 ); }
+		| PostFixExpr					{ $$ = $1; }
 ;
 
 PostFixExpr:
-		ID '(' ArgumentList ')'									{ $$ = new FuncCall( $1, (ArgList*)$3 ); }
-		| ID '(' ')'											{ $$ = new FuncCall( $1 ); }
-		| ID													{ $$ = new Identifier( $1 ); }
-		| ID '[' Expr ']'										{ $$ = new Identifier( $1, (Expression*)$3 ); }
-		| Constant												{ $$ = $1; }
-		| '(' Expr ')'											{ $$ = $2; }
+		ID '(' ArgumentList ')'				{ $$ = new FuncCall( $1, (ArgList*)$3 ); }
+		| ID '(' ')'					{ $$ = new FuncCall( $1 ); }
+		| ID						{ $$ = new Identifier( $1 ); }
+		| ID '[' Expr ']'				{ $$ = new Identifier( $1, (Expression*)$3 ); }
+		| Constant					{ $$ = $1; }
+		| '(' Expr ')'					{ $$ = $2; }
 ;
 
 Constant:
-		LITINT													{ $$ = new ConstExpr( INT_T, $1 ); }
-		| LITCHAR												{ $$ = new ConstExpr( CHAR_T, $1 ); }
-		| LITSTRING												{ $$ = new ConstExpr( CHAR_ARRAY_T, $1 ); }
+		LITINT						{ $$ = new ConstExpr( INT_T, $1 ); }
+		| LITCHAR					{ $$ = new ConstExpr( CHAR_T, $1 ); }
+		| LITSTRING					{ $$ = new ConstExpr( CHAR_ARRAY_T, $1 ); }
 ;
 
 ArgumentList:
-		Expr													{ $$ = new ArgList(); $$->add( $1 ); }
-		| ArgumentList ',' Expr									{ $$ = $1; $$->add( $3 ); }
+		Expr						{ $$ = new ArgList(); $$->add( $1 ); }
+		| ArgumentList ',' Expr				{ $$ = $1; $$->add( $3 ); }
 ;
 
 UnaryOp:
-		'-'														{ $$ = MINUS; }
-		| '!'													{ $$ = NOT; }
+		'-'						{ $$ = MINUS; }
+		| '!'						{ $$ = NOT; }
 ;
 
 BinOp:
-		BooleanOp												{ $$ = $1; }
-		| RelOp													{ $$ = $1; }
-		| AritmOp												{ $$ = $1; }
+		BooleanOp					{ $$ = $1; }
+		| RelOp						{ $$ = $1; }
+		| AritmOp					{ $$ = $1; }
 ;
 
 AritmOp:
-		'+'														{ $$ = PLUS; }
-		| '-'													{ $$ = MINUS; }
-		| '*'													{ $$ = TIMES; }
-		| '/'													{ $$ = DIVIDES; }
+		'+'						{ $$ = PLUS; }
+		| '-'						{ $$ = MINUS; }
+		| '*'						{ $$ = TIMES; }
+		| '/'						{ $$ = DIVIDES; }
 ;
 
 RelOp:
-		'<'														{ $$ = LESS; }
-		| '>'													{ $$ = GREATER; }
-		| EQUAL													{ $$ = EQUALS; }
-		| NEQUAL												{ $$ = NOT_EQUAL; }
-		| LESSEQ												{ $$ = LESS_EQUAL; }
-		| GREATEREQ												{ $$ = GREATER_EQUAL; }
+		'<'						{ $$ = LESS; }
+		| '>'						{ $$ = GREATER; }
+		| EQUAL						{ $$ = EQUALS; }
+		| NEQUAL					{ $$ = NOT_EQUAL; }
+		| LESSEQ					{ $$ = LESS_EQUAL; }
+		| GREATEREQ					{ $$ = GREATER_EQUAL; }
 ;
 
 BooleanOp:
-		OR														{ $$ = LOGICAL_OR; }
-		| AND													{ $$ = LOGICAL_AND; }
+		OR						{ $$ = LOGICAL_OR; }
+		| AND						{ $$ = LOGICAL_AND; }
 ;
 
 
