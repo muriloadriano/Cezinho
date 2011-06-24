@@ -3,20 +3,23 @@ int fudeu()
 	return 1;
 }
 
-int god(int x, char x)
+int god(int x, char z, char u)
 {
 	return 1;
 }
 
 char ggg(int x)
 {
-	return 'x';
+	return 1;
 }
 
 int main(){
 	
-	char c;
+	int c;
+	char d;
 	
-	ggg(1);
+	c = fudeu();
+	d = ggg(1);
+	
 	return 1;
 }

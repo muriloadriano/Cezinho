@@ -134,30 +134,10 @@ class Identifier : public ASTNode {
 			child[0] = array_pos;
 		}
 		
-		DataType getType(){ return var_type; }
+		DataType getVarType(){ return var_type; }
 		std::string* getVarName() { return this->var_name; }
 		
 		void walk(int depth) {
-			
-			// DEBUG
-			IDENT( depth );
-			
-			std::cout << "variavel ";
-			switch( var_type ){
-				case INT_T: std::cout << "int "; break;
-				case CHAR_T: std::cout << "char "; break;
-				case INT_ARRAY_T: std::cout << "int[] "; break;
-				case CHAR_ARRAY_T: std::cout << "char[] "; break;
-			}
-			std::cout << *(var_name);
-			
-			if (child[0] != NULL) {
-				std::cout << " na posicao :" << std::endl;
-				child[0]->walk( depth+1 );
-			}
-			std::cout << std::endl;
-			// DEBUG
-			
 			DataType type;
 			if ((var_symbol_tab.find(*var_name) != var_symbol_tab.end()) && 
 				!var_symbol_tab[*var_name].empty()) {
@@ -186,6 +166,25 @@ class Identifier : public ASTNode {
 			}
 			
 			this->var_type = type;
+			
+			// DEBUG
+			IDENT( depth );
+			
+			std::cout << "variavel ";
+			switch( var_type ){
+				case INT_T: std::cout << "int "; break;
+				case CHAR_T: std::cout << "char "; break;
+				case INT_ARRAY_T: std::cout << "int[] "; break;
+				case CHAR_ARRAY_T: std::cout << "char[] "; break;
+			}
+			std::cout << *(var_name);
+			
+			if (child[0] != NULL) {
+				std::cout << " na posicao :" << std::endl;
+				child[0]->walk( depth+1 );
+			}
+			std::cout << std::endl;
+			// DEBUG
 		}
 };
 
@@ -215,6 +214,7 @@ class Param : public ASTNode{
 		Param( DataType dt, std::string* param_ident ) : param_type( dt ), param_name( param_ident ){}
 		
 		const std::string* getParamName() { return param_name; }
+		
 		DataType getParamType() { return param_type; }
 		
 		void walk( int depth ){
@@ -473,7 +473,7 @@ class BinaryExpr : public Expression {
 
 class Assignment : public Expression {
 	public:
-		Assignment(Identifier* lhs, Expression* rhs) : Expression(lhs->getType()) {
+		Assignment(Identifier* lhs, Expression* rhs) : Expression(lhs->getVarType()) {
 			child.resize(2);
 			child[0] = lhs;
 			child[1] = rhs;
@@ -489,9 +489,9 @@ class Assignment : public Expression {
 			Identifier* lhs = static_cast<Identifier*>(child[0]);
 			Expression* rhs = static_cast<Expression*>(child[1]);
 			
-			if (getType() != rhs->getType()) {
+			if (lhs->getVarType() != rhs->getType()) {
 				std::string error = "Impossível converter " + getTypeName(rhs->getType()) +
-					" para " + getTypeName(getType()) + " na atribuição.";
+					" para " + getTypeName(lhs->getVarType()) + " na atribuição.";
 					
 				yyerror(error.c_str());
 			}
