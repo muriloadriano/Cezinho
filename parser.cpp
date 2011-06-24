@@ -1628,14 +1628,14 @@ yyreduce:
 
 /* Line 1464 of yacc.c  */
 #line 98 "cezinho-parser.y"
-    { (yyval.node) = (yyvsp[(1) - (4)].node); 					(yyval.node)->add( new Param( (yyvsp[(3) - (4)].datatype), (yyvsp[(4) - (4)].lxval) ) );	}
+    { (yyval.node) = (yyvsp[(1) - (4)].node); (yyval.node)->add( new Param( (yyvsp[(3) - (4)].datatype), (yyvsp[(4) - (4)].lxval) ) );	}
     break;
 
   case 15:
 
 /* Line 1464 of yacc.c  */
 #line 99 "cezinho-parser.y"
-    { (yyval.node) = (yyvsp[(1) - (6)].node); 					(yyval.node)->add( new Param( ((yyvsp[(3) - (6)].datatype)==INT_T)?INT_ARRAY_T:CHAR_ARRAY_T, (yyvsp[(4) - (6)].lxval) ) ); }
+    { (yyval.node) = (yyvsp[(1) - (6)].node); (yyval.node)->add( new Param( ((yyvsp[(3) - (6)].datatype)==INT_T)?INT_ARRAY_T:CHAR_ARRAY_T, (yyvsp[(4) - (6)].lxval) ) ); }
     break;
 
   case 16:
@@ -1670,7 +1670,7 @@ yyreduce:
 
 /* Line 1464 of yacc.c  */
 #line 110 "cezinho-parser.y"
-    { (yyval.node) = (yyvsp[(1) - (4)].node);				  ((VarDecl*)(yyvsp[(3) - (4)].node))->setDataType((yyvsp[(2) - (4)].datatype)); (yyval.node)->add( (yyvsp[(3) - (4)].node) );  }
+    { (yyval.node) = (yyvsp[(1) - (4)].node); ((VarDecl*)(yyvsp[(3) - (4)].node))->setDataType((yyvsp[(2) - (4)].datatype)); (yyval.node)->add( (yyvsp[(3) - (4)].node) );  }
     break;
 
   case 21:
@@ -1698,7 +1698,7 @@ yyreduce:
 
 /* Line 1464 of yacc.c  */
 #line 120 "cezinho-parser.y"
-    { (yyval.node) = (yyvsp[(1) - (2)].node);					(yyval.node)->add( (yyvsp[(2) - (2)].node) ); }
+    { (yyval.node) = (yyvsp[(1) - (2)].node); (yyval.node)->add( (yyvsp[(2) - (2)].node) ); }
     break;
 
   case 25:
@@ -1790,10 +1790,10 @@ yyreduce:
 /* Line 1464 of yacc.c  */
 #line 139 "cezinho-parser.y"
     { 	
-																	Identifier* aux = dynamic_cast<Identifier*>((yyvsp[(1) - (3)].node));
-																	if( aux == NULL ) yyerror( "Lado esquerdo de uma atribuicao deve ser um identificador." );
-																	else (yyval.node) = new Assignment( (Identifier*)(yyvsp[(1) - (3)].node), (Expression*)(yyvsp[(3) - (3)].node) );
-																}
+									Identifier* aux = dynamic_cast<Identifier*>((yyvsp[(1) - (3)].node));
+									if( aux == NULL ) yyerror( "Lado esquerdo de uma atribuicao deve ser um identificador." );
+									else (yyval.node) = new Assignment(aux, (Expression*)(yyvsp[(3) - (3)].node));
+								}
     break;
 
   case 38:

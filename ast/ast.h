@@ -16,20 +16,16 @@
 #include <string>
 #include <map>
 #include <stack>
-#include <utility>
-#include <list>
+#include <set>
+#include <sstream>
 
 void yyerror(const char *);
 void yyerror(const char *, int);
 
 class Identifier;
 class FuncDecl;
-
-typedef std::map<std::string, std::list< std::pair<Identifier*, int> > > VarSymTab;
-typedef std::map<std::string, FuncDecl*> FuncSymTab;
-
-static VarSymTab var_symbol_tab;
-static FuncSymTab func_symbol_tab;
+struct Variable;
+class ConstExpr;
 
 enum DataType 
 {
@@ -47,14 +43,31 @@ enum Op
         DIVIDES,
         GREATER,
         LESS,
-		EQUALS,
+	EQUALS,
         NOT_EQUAL,
-		LESS_EQUAL,
-		GREATER_EQUAL,
+	LESS_EQUAL,
+	GREATER_EQUAL,
         LOGICAL_OR,
         LOGICAL_AND,
-		NOT
+	NOT
 };
+
+typedef std::map<std::string, std::stack<DataType> > VarSymTab;
+typedef std::map<std::string, FuncDecl*> FuncSymTab;
+
+static VarSymTab var_symbol_tab;
+static FuncSymTab func_symbol_tab;
+
+
+inline std::string getTypeName(DataType t)
+{
+	switch (t) {
+		case INT_T: return "int";
+		case CHAR_T: return "char";
+		case INT_ARRAY_T: return "int[]";
+		case CHAR_ARRAY_T: return "char[]";
+	}
+}
 
 #define REP( i, N ) for( int i = 0; i < N; i++ )
 #define IDENT(depth) REP( i, depth) std::cout<< "\t";
@@ -81,25 +94,6 @@ class ASTNode {
 		}
 };
 
-class VarDecl : public ASTNode {
-	protected:
-		DataType var_type;
-	public:
-		void setDataType( DataType dt ){ var_type = dt; }
-		
-		void walk( int depth ){
-			IDENT( depth );
-			std::cout << " declarando variaveis tipo ";
-			switch( var_type ){
-				case INT_T: std::cout << "int\n"; break;
-				case CHAR_T: std::cout << "char\n"; break;
-				case INT_ARRAY_T: std::cout << "int[]\n"; break;
-				case CHAR_ARRAY_T: std::cout << "char[]\n"; break;
-			}
-			for( size_t i = 0; i < child.size(); i++ ) child[i]->walk( depth+1 );
-		}
-};
-
 class Statement : public ASTNode {
 	public:
 		
@@ -115,7 +109,7 @@ class Expression : public ASTNode {
 		Expression( DataType dt ) : expr_type( dt ) {}
 		Expression() : expr_type( INT_T ) {}
 		
-		DataType getType(){ return expr_type; }
+		DataType getType() { return expr_type; }
 		
 		void walk( int depth ){
 			IDENT( depth );
@@ -135,15 +129,19 @@ class Identifier : public ASTNode {
 		DataType var_type;
 		std::string* var_name;
 	public:
-		Identifier( std::string* identifier ) : var_name( identifier ){}
-		Identifier( std::string* identifier, Expression* array_pos ) : var_name( identifier ){
-			child.resize( 1 );
+		Identifier(std::string* identifier, Expression* array_pos = NULL) : var_name(identifier) {
+			child.resize(1);
 			child[0] = array_pos;
 		}
-		DataType getType(){ return var_type; }
 		
-		void walk( int depth ){
+		DataType getType(){ return var_type; }
+		std::string* getVarName() { return this->var_name; }
+		
+		void walk(int depth) {
+			
+			// DEBUG
 			IDENT( depth );
+			
 			std::cout << "variavel ";
 			switch( var_type ){
 				case INT_T: std::cout << "int "; break;
@@ -152,11 +150,42 @@ class Identifier : public ASTNode {
 				case CHAR_ARRAY_T: std::cout << "char[] "; break;
 			}
 			std::cout << *(var_name);
-			if( !child.empty() ){
+			
+			if (child[0] != NULL) {
 				std::cout << " na posicao :" << std::endl;
 				child[0]->walk( depth+1 );
 			}
 			std::cout << std::endl;
+			// DEBUG
+			
+			DataType type;
+			if ((var_symbol_tab.find(*var_name) != var_symbol_tab.end()) && 
+				!var_symbol_tab[*var_name].empty()) {
+				type = var_symbol_tab[*var_name].top();
+			}
+			else {
+				std::string error = "O identificador ``" + *var_name + "'' não foi declarado nesse escopo.";
+				yyerror(error.c_str());
+			}
+			
+			if ((type == INT_ARRAY_T || type == CHAR_ARRAY_T)) {
+				if (child[0] == NULL) {
+					std::string error = "Deve ser passada a posição do array ``" + *var_name
+						+ "'' a ser acessada.";
+					yyerror(error.c_str());
+				}
+				else {
+					Expression* pos = static_cast<Expression*>(child[0]);
+					
+					if (pos->getType() != INT_T) {
+						std::string error = "Erro ao acessar o array ``" + *var_name
+							+ "'': a posição deve ser uma expressão do tipo int.";
+						yyerror(error.c_str());	
+					}
+				}
+			}
+			
+			this->var_type = type;
 		}
 };
 
@@ -268,7 +297,7 @@ class FuncDecl : public ASTNode {
 			func_name = func_ident;
 		}
 		
-		void setDataType( DataType dt ){ func_type = dt; }
+		void setDataType( DataType dt ) { func_type = dt; }
 		
 		DataType getType() { return this->func_type; }
 		ParamList* getParamList() { return static_cast<ParamList*>(this->child[0]); }
@@ -423,7 +452,7 @@ class BinaryExpr : public Expression {
 
 class Assignment : public Expression {
 	public:
-		Assignment( Identifier* lhs, Expression* rhs ) : Expression( lhs->getType() ) {
+		Assignment(Identifier* lhs, Expression* rhs) : Expression(lhs->getType()) {
 			child.resize(2);
 			child[0] = lhs;
 			child[1] = rhs;
@@ -431,9 +460,20 @@ class Assignment : public Expression {
 		
 		void walk( int depth ){
 			IDENT( depth );
+			
 			std::cout << "fazendo atribuicao " << std::endl;
-			child[0]->walk( depth+1 );
-			child[1]->walk( depth+1 );
+			child[0]->walk(depth + 1);
+			child[1]->walk(depth + 1);
+			
+			Identifier* lhs = static_cast<Identifier*>(child[0]);
+			Expression* rhs = static_cast<Expression*>(child[1]);
+			
+			if (getType() != rhs->getType()) {
+				std::string error = "Impossível converter " + getTypeName(rhs->getType()) +
+					" para " + getTypeName(getType()) + " na atribuição.";
+					
+				yyerror(error.c_str());
+			}
 		}
 };
 
@@ -442,7 +482,22 @@ class ConstExpr : public Expression {
 		std::string* value;
 	public:
 		ConstExpr( DataType dt, std::string* lvalue ) : Expression( dt ), value( lvalue ) {}
-		std::string* getvalue(){ return value; }
+		
+		int getIntValue() {
+			std::istringstream iss(*value);
+			int v;
+			iss >> v;
+			
+			return v;
+		}
+		
+		std::string getStringValue() {
+			return *value;
+		}
+		
+		char getCharValue() {
+			return value->at(0);
+		}
 		
 		void walk( int depth ){
 			IDENT( depth ); std::cout << *value << std::endl;
@@ -454,14 +509,75 @@ class DeclIdentifier : public ASTNode {
 		ConstExpr* var_size;
 		std::string* var_name;
 	public:
-		DeclIdentifier( std::string* identifier ) : var_name( identifier ){ var_size = NULL; }
-		DeclIdentifier( std::string* identifier, ConstExpr* array_size ) : var_name( identifier ), var_size( array_size ){}
+		DeclIdentifier(std::string* identifier) : var_name(identifier) { var_size = NULL; }
+		DeclIdentifier(std::string* identifier, ConstExpr* array_size) : var_name(identifier), var_size(array_size) {}
 		
-		void walk( int depth ){
-			IDENT( depth );
+		std::string* getVarName() { return this->var_name; }
+		int getVarSize() { return this->var_size->getIntValue(); }
+		bool isArray() { return (var_size != NULL); }
+		
+		void walk(int depth) {
+			IDENT(depth);
 			std::cout << *(var_name);
-			if( var_size != NULL ) std::cout << " com tamanho " << *((var_size)->getvalue());
+			if (var_size != NULL) {
+				if (var_size->getType() != INT_T) {
+					std::string error = "Na declaração da variável ``" + *var_name
+						+ "'': O tipo do tamanho de um array deve ser um int.";
+					
+					yyerror(error.c_str());
+				}
+				std::cout << " com tamanho " << var_size->getIntValue();
+			}
 			std::cout << std::endl;
+		}
+};
+
+class VarDecl : public ASTNode {
+	protected:
+		DataType var_type;
+	public:
+		void setDataType(DataType dt) { var_type = dt; }
+		
+		void walk(int depth) {
+			IDENT( depth );
+			std::cout << " declarando variaveis tipo ";
+			switch( var_type ){
+				case INT_T: std::cout << "int\n"; break;
+				case CHAR_T: std::cout << "char\n"; break;
+				case INT_ARRAY_T: std::cout << "int[]\n"; break;
+				case CHAR_ARRAY_T: std::cout << "char[]\n"; break;
+			}
+			for (size_t i = 0; i < child.size(); i++) child[i]->walk(depth+1);
+			
+			std::set<std::string> declared;
+			DeclIdentifier* id;
+			
+			for (size_t i = 0; i < child.size(); i++) {
+				id = static_cast<DeclIdentifier*>(child[i]);
+				
+				if (declared.find(*(id->getVarName())) != declared.end()) {
+					std::string error = "Redeclaração do identificador " + *id->getVarName() + ".";
+					
+					yyerror(error.c_str());
+				}
+				
+				declared.insert(*(id->getVarName()));
+				
+				DataType type;
+				if (id->isArray()) {
+					if (this->var_type == INT_T) {
+						type = INT_ARRAY_T;
+					}
+					else {
+						type = CHAR_ARRAY_T;
+					}
+				}
+				else {
+					type = this->var_type;
+				}
+				
+				var_symbol_tab[*(id->getVarName())].push(type);
+			}
 		}
 };
 

@@ -95,8 +95,8 @@ FuncDecl:
 ParamDecList:
 		Type ID						{ $$ = new ParamList(); $$->add( new Param( $1, $2 ) ); }
 		| Type ID '[' ']'				{ $$ = new ParamList(); $$->add( new Param( ($1==INT_T)?INT_ARRAY_T:CHAR_ARRAY_T, $2 ) ); }
-		| ParamDecList ',' Type ID			{ $$ = $1; 					$$->add( new Param( $3, $4 ) );	}
-		| ParamDecList ',' Type ID '[' ']'		{ $$ = $1; 					$$->add( new Param( ($3==INT_T)?INT_ARRAY_T:CHAR_ARRAY_T, $4 ) ); }
+		| ParamDecList ',' Type ID			{ $$ = $1; $$->add( new Param( $3, $4 ) );	}
+		| ParamDecList ',' Type ID '[' ']'		{ $$ = $1; $$->add( new Param( ($3==INT_T)?INT_ARRAY_T:CHAR_ARRAY_T, $4 ) ); }
 ;
 
 Block:
@@ -107,7 +107,7 @@ Block:
 
 VarDeclList:
 		Type VarDecl ';'				{ $$ = new VarDeclList(); ((VarDecl*)$2)->setDataType($1); $$->add($2); }
-		| VarDeclList Type VarDecl ';'			{ $$ = $1;				  ((VarDecl*)$3)->setDataType($2); $$->add( $3 );  }
+		| VarDeclList Type VarDecl ';'			{ $$ = $1; ((VarDecl*)$3)->setDataType($2); $$->add( $3 );  }
 ;
 
 Type:
@@ -117,7 +117,7 @@ Type:
 
 StmtList:
 		Stmt						{ $$ = new StatementList(); $$->add( $1 ); }
-		| StmtList Stmt					{ $$ = $1;					$$->add( $2 ); }
+		| StmtList Stmt					{ $$ = $1; $$->add( $2 ); }
 ;
 
 Stmt:
@@ -139,7 +139,7 @@ Expr:
 		UnaryExpr '=' Expr				{ 	
 									Identifier* aux = dynamic_cast<Identifier*>($1);
 									if( aux == NULL ) yyerror( "Lado esquerdo de uma atribuicao deve ser um identificador." );
-									else $$ = new Assignment( (Identifier*)$1, (Expression*)$3 );
+									else $$ = new Assignment(aux, (Expression*)$3);
 								}
 		| BinaryExpr					{ $$ = $1; }
 ;
