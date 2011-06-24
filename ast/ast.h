@@ -94,13 +94,7 @@ class ASTNode {
 		}
 };
 
-class Statement : public ASTNode {
-	public:
-		
-		void walk( int depth ){
-			IDENT( depth ); std::cout << "fake statement" << std::endl;
-		}
-};
+
 
 class Expression : public ASTNode {
 	protected:
@@ -188,9 +182,107 @@ class Identifier : public ASTNode {
 		}
 };
 
-class StatementList : public ASTNode {
+class Statement : public ASTNode {
 	public:
 		
+		void walk( int depth ){
+			IDENT( depth ); std::cout << "fake statement" << std::endl;
+		}
+};
+
+class While : public Statement {
+	public:
+		While( Expression* expr, Statement* stmt ) {
+			child.resize(2);
+			child[0] = expr; child[1] = stmt;
+		}
+		
+		void walk( int depth ){
+			IDENT( depth );
+			std::cout << "while " << std::endl;
+			child[0]->walk( depth+1 );
+			child[1]->walk( depth+1 );
+		}
+};
+
+class If : public Statement {
+	public:
+		If( Expression* expr, Statement* stmt ){
+			child.resize(2);
+			child[0] = expr; child[1] = stmt;
+		};
+		If( Expression* expr, Statement* stmt, Statement* elsestmt ){
+			child.resize(3);
+			child[0] = expr; child[1] = stmt; child[2] = elsestmt;
+		}
+		
+		void walk( int depth ){
+			IDENT( depth );
+			if( child.size() == 2 ) std::cout << "open If" << std::endl;
+			else std::cout << "elsed If" << std::endl;
+			for( size_t i = 0; i < child.size(); i++ ) child[i]->walk( depth+1 );
+		}
+};
+
+class Return : public Statement {
+	protected:
+		Expression* return_value;
+		DataType return_type;
+	public:
+		Return( Expression* expr ) : return_value( expr ) {}
+		
+		DataType getReturnType() { return this->return_type; }
+		
+		void walk( int depth ){
+			IDENT( depth );
+			std::cout << " return " << std::endl;
+			return_value->walk(depth + 1);
+			
+			this->return_type = return_value->getType();
+		}
+};
+
+class Read : public Statement {
+	protected:
+		Identifier* var_id;
+	public:
+		Read( Identifier* identifier ) : var_id( identifier ) {}
+		
+		void walk( int depth ){
+			IDENT( depth );
+			std::cout << "read " << std::endl;
+			var_id->walk( depth+1 );
+		}
+};
+
+class Write : public Statement {
+	public:
+		Write(){}
+		Write( Expression* expr ){ child.resize( 1 ); child[0] = expr; }
+		
+		void walk( int depth ){
+			IDENT( depth );
+			std::cout << "write" << std::endl;
+			child[0]->walk( depth+1 );
+		}
+};
+
+class Break : public Statement {
+	public:
+		
+		void walk( int depth ){
+			IDENT( depth ); std::cout << "break" << std::endl;
+		}	
+};
+
+class StatementList : public ASTNode {
+	public:
+	
+	const std::vector<ASTNode*>& getChildren()
+	{
+		return this->child;
+	}
+	
 	void walk( int depth ){
 		IDENT( depth ); std::cout << "executando as instrucoes:" << std::endl;
 		for( size_t i = 0; i < child.size(); i++ ) child[i]->walk( depth+1 );
@@ -275,25 +367,77 @@ class ArgList : public ASTNode {
 };
 
 class Block : public Statement {
+	protected:
+		bool has_return;
+		DataType return_type;
+		bool return_error;
+		
 	public:
-		Block( VarDeclList* var_decl, StatementList* statements ){
+		Block(VarDeclList* var_decl, StatementList* statements = NULL) {
 			child.resize(2);
 			child[0] = var_decl;
 			child[1] = statements;
 		}
-		Block( VarDeclList* var_decl ){
-			child.resize(1);
-			child[0] = var_decl;
+		
+		Block(StatementList* statements){
+			child.resize(2);
+			child[0] = NULL;
+			child[1] = statements;
 		}
-		Block( StatementList* statements ){
-			child.resize(1);
-			child[0] = statements;
-		}
+		
+		bool hasReturn() { return has_return; }
+		DataType getReturnType() { return return_type; }
+		bool hasError() { return return_error; }
 		
 		void walk( int depth ){
 			IDENT( depth );
 			std::cout << "iniciando num novo bloco de instrucoes" << std::endl;
-			for( size_t i = 0; i < child.size(); i++ ) child[i]->walk( depth+1 );
+			
+			this->has_return = false;
+				
+			if (child[0] != NULL) child[0]->walk(depth + 1);
+			
+			if (child[1] != NULL) {
+				 child[1]->walk(depth + 1);
+				
+				StatementList* stmt = static_cast<StatementList*>(child[1]);
+				const std::vector<ASTNode*> children = stmt->getChildren();
+				
+				Return* ret;
+				Block* block;
+				for (size_t i = 0; i < children.size(); ++i) {
+					ret = dynamic_cast<Return*>(children[i]);
+					
+					if (ret != NULL) {
+						if (!has_return) {
+							this->has_return = true;
+							this->return_type = ret->getReturnType();
+						}
+						else if (return_type != ret->getReturnType()) {
+							this->return_error = true;
+						}
+					}
+					else {
+						block = dynamic_cast<Block*>(children[i]);
+						if (block != NULL) {
+							if (block->hasReturn()) {
+								if (this->has_return) {
+									if (this->return_type != block->getReturnType()) {
+										this->return_error = true;
+									}
+								}
+								else {
+									this->return_error |= block->hasError();
+									this->return_type = block->getReturnType();
+								}
+							
+								this->has_return = true;
+							}
+						}
+					}
+				}
+			}
+			
 			IDENT( depth ); std::cout << "finalizando o bloco.. aqui atualiza a tabela de simbolos" << std::endl;
 		}
 };
@@ -340,9 +484,25 @@ class FuncDecl : public ASTNode {
 			
 			if (child[0] != NULL) {
 				child[0]->walk(depth+1);
-			
 			}
-			child[1]->walk( depth+1 );
+			
+			child[1]->walk(depth + 1);
+			
+			Block* block = static_cast<Block*>(child[1]);
+			
+			if (block->hasReturn()) {
+				if (block->hasError()) {
+					std::string error = "Na função ``" + *func_name + "'': "
+						+ " retornando um tipo diferente do tipo de retorno da função.";
+						
+					yyerror(error.c_str());
+				}
+				else if (block->getReturnType() != this->func_type) {
+					std::string error = "Na função ``" + *func_name + "'': "
+						+ " retornando um tipo diferente do tipo de retorno da função.";
+					yyerror(error.c_str());
+				}
+			}
 		}
 };
 
@@ -600,86 +760,6 @@ class VarDecl : public ASTNode {
 				var_symbol_tab[*(id->getVarName())].push(type);
 			}
 		}
-};
-
-class While : public Statement {
-	public:
-		While( Expression* expr, Statement* stmt ){
-			child.resize(2);
-			child[0] = expr; child[1] = stmt;
-		}
-		
-		void walk( int depth ){
-			IDENT( depth );
-			std::cout << "while " << std::endl;
-			child[0]->walk( depth+1 );
-			child[1]->walk( depth+1 );
-		}
-};
-
-class If : public Statement {
-	public:
-		If( Expression* expr, Statement* stmt ){
-			child.resize(2);
-			child[0] = expr; child[1] = stmt;
-		};
-		If( Expression* expr, Statement* stmt, Statement* elsestmt ){
-			child.resize(3);
-			child[0] = expr; child[1] = stmt; child[2] = elsestmt;
-		}
-		
-		void walk( int depth ){
-			IDENT( depth );
-			if( child.size() == 2 ) std::cout << "open If" << std::endl;
-			else std::cout << "elsed If" << std::endl;
-			for( size_t i = 0; i < child.size(); i++ ) child[i]->walk( depth+1 );
-		}
-};
-
-class Return : public Statement {
-	protected:
-		Expression* return_value;
-	public:
-		Return( Expression* expr ) : return_value( expr ) {}
-		
-		void walk( int depth ){
-			IDENT( depth );
-			std::cout << " return " << std::endl;
-			return_value->walk( depth+1 );
-		}
-};
-
-class Read : public Statement {
-	protected:
-		Identifier* var_id;
-	public:
-		Read( Identifier* identifier ) : var_id( identifier ) {}
-		
-		void walk( int depth ){
-			IDENT( depth );
-			std::cout << "read " << std::endl;
-			var_id->walk( depth+1 );
-		}
-};
-
-class Write : public Statement {
-	public:
-		Write(){}
-		Write( Expression* expr ){ child.resize( 1 ); child[0] = expr; }
-		
-		void walk( int depth ){
-			IDENT( depth );
-			std::cout << "write" << std::endl;
-			child[0]->walk( depth+1 );
-		}
-};
-
-class Break : public Statement {
-	public:
-		
-		void walk( int depth ){
-			IDENT( depth ); std::cout << "break" << std::endl;
-		}	
 };
 
 #endif
