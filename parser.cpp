@@ -1607,7 +1607,7 @@ yyreduce:
 
 /* Line 1464 of yacc.c  */
 #line 92 "cezinho-parser.y"
-    { (yyval.node) = new FuncDecl( (Block*)(yyvsp[(3) - (3)].node) ); }
+    { (yyval.node) = new FuncDecl( NULL, (Block*)(yyvsp[(3) - (3)].node) ); }
     break;
 
   case 12:

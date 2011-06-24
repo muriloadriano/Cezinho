@@ -89,7 +89,7 @@ VarDecl:
 
 FuncDecl:
 		'(' ParamDecList ')' Block								{ $$ = new FuncDecl( (ParamList*)$2, (Block*)$4 ); }
-		| '(' ')' Block											{ $$ = new FuncDecl( (Block*)$3 ); }
+		| '(' ')' Block											{ $$ = new FuncDecl( NULL, (Block*)$3 ); }
 ;
 
 ParamDecList:

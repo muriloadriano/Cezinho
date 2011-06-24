@@ -258,11 +258,7 @@ class FuncDecl : public ASTNode {
 			child[0] = params;
 			child[1] = block;
 		}
-		FuncDecl( Block* block ){
-			child.resize(2);
-			child[0] = NULL;
-			child[1] = block;
-		}
+		
 		void setFuncName( std::string* func_ident ){ func_name = func_ident; }
 		void setDataType( DataType dt ){ func_type = dt; }
 		
