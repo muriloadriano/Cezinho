@@ -77,14 +77,14 @@ class ASTNode {
 		std::vector< ASTNode* > child;
 		int node_location;
 	public:
-		ASTNode(){ child.clear(); }
+		ASTNode() { child.clear(); }
 		
-		void add( ASTNode* a ){ child.push_back( a ); }
+		virtual void add(ASTNode* node) { child.push_back(node); }
 		
-		void set_location( int lineno ) { node_location = lineno; }
+		void set_location(int lineno) { node_location = lineno; }
 		
 		void reverse() { 
-			std::reverse( child.begin(), child.end() ); 
+			std::reverse(child.begin(), child.end()); 
 		}
 		
 		virtual void walk( int depth ){
@@ -214,6 +214,9 @@ class Param : public ASTNode{
 	public:
 		Param( DataType dt, std::string* param_ident ) : param_type( dt ), param_name( param_ident ){}
 		
+		const std::string* getParamName() { return param_name; }
+		DataType getParamType() { return param_type; }
+		
 		void walk( int depth ){
 			IDENT( depth ); 
 			std::cout << "parametro " << *(param_name) << ", tipo ";
@@ -230,18 +233,31 @@ class Param : public ASTNode{
 };
 
 class ParamList : public ASTNode {
-	public:
+	public:	
+		void walk( int depth ){
+			IDENT( depth );
+			std::cout << "lista de parametros:" << std::endl;
+		
+			std::set<std::string> params;
+		
+			Param* param;
+			for (size_t i = 0; i < child.size(); i++) {
+				child[i]->walk(depth + 1);
+			
+				param = static_cast<Param*>(child[i]);
+				if (params.find(*param->getParamName()) != params.end()) {
+					std::string error = "Parâmetro " + *param->getParamName() + " redeclarado.";
+					yyerror(error.c_str());
+				}
+				
+				params.insert(*param->getParamName());
+			}
+		}
 	
-	void walk( int depth ){
-		IDENT( depth );
-		std::cout << "lista de parametros:" << std::endl;
-		for( size_t i = 0; i < child.size(); i++ ) child[i]->walk( depth+1 );
-	}
-	
-	const std::vector<ASTNode*>& getChild()
-	{
-		return this->child;
-	}
+		const std::vector<ASTNode*>& getChild()
+		{
+			return this->child;
+		}
 };
 
 class ArgList : public ASTNode {
@@ -307,7 +323,6 @@ class FuncDecl : public ASTNode {
 			
 			if (func_symbol_tab.find(*func_name) != func_symbol_tab.end()) {
 				std::string error = "Redeclaração da função " + *func_name + ".";
-				
 				yyerror(error.c_str());
 			}
 			else {
@@ -322,7 +337,11 @@ class FuncDecl : public ASTNode {
 				case CHAR_ARRAY_T: std::cout << "char[] "; break;
 			}
 			std::cout << std::endl;
-			if (child[0] != NULL) child[0]->walk( depth+1 );
+			
+			if (child[0] != NULL) {
+				child[0]->walk(depth+1);
+			
+			}
 			child[1]->walk( depth+1 );
 		}
 };
@@ -375,6 +394,8 @@ class FuncCall : public Expression {
 					for (int i = 0; i < paramChildren.size(); ++i) {
 						param = static_cast<Param*>(paramChildren[i]);
 						arg   = static_cast<Expression*>(argChildren[i]);
+						
+						var_symbol_tab[*param->getParamName()].push(param->getParamType());
 						
 						if (param->getType() != arg->getType()) {
 							std::string error = "Na chamada de função ``" + *func_identifier + 

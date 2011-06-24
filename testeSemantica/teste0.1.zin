@@ -3,7 +3,7 @@ int fudeu()
 	return 1;
 }
 
-int god(int x)
+int god(int x, char x)
 {
 	return 1;
 }
@@ -16,8 +16,7 @@ char ggg(int x)
 int main(){
 	
 	char c;
-	god(1);
 	
-	c = ggg(1);
+	ggg(1);
 	return 1;
 }
