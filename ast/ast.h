@@ -10,6 +10,8 @@
 #ifndef CEZINHO_AST_H_
 #define CEZINHO_AST_H_
 
+//#define DBG_PRINT_TREE
+//#define DBG_SYM_TAB
 
 #include <vector>
 #include <iostream>
@@ -44,13 +46,13 @@ enum Op
         DIVIDES,
         GREATER,
         LESS,
-	EQUALS,
+		EQUALS,
         NOT_EQUAL,
-	LESS_EQUAL,
-	GREATER_EQUAL,
+		LESS_EQUAL,
+		GREATER_EQUAL,
         LOGICAL_OR,
         LOGICAL_AND,
-	NOT
+		NOT
 };
 
 typedef std::map<std::string, std::stack< std::pair<DataType,int> > > VarSymTab;
@@ -650,6 +652,7 @@ class UnaryExpr : public Expression {
 					default: std::cout << " isso nao devia ser impresso" << std::endl;
 				}
 			#endif	
+			// Checagem de tipo aqui?
 			child[0]->walk( depth+1 );
 		}
 };
@@ -686,6 +689,7 @@ class BinaryExpr : public Expression {
 			#endif
 			child[0]->walk( depth+1 );
 			child[1]->walk( depth+1 );
+			if( oper != LOGICAL_OR && oper != LOGICAL_AND && ((BinaryExpr*)child[0])->getType() != ((UnaryExpr*)child[1])->getType() ) yyerror( "Tipos incompativeis." );
 		}
 };
 
@@ -737,6 +741,18 @@ class ConstExpr : public Expression {
 		}
 		
 		char getCharValue() {
+			if( value->at(0) == '\\' ){
+				switch( value->at(1) ){
+					case '0': return '\0';
+					case 'n': return '\n';
+					case 't': return '\t';
+					case 'a': return '\a';
+					case 'r': return '\r';
+					case 'b': return '\b'; 
+					case 'f': return '\f';
+					case '\\': return '\\';
+				}
+			}
 			return value->at(0);
 		}
 		
