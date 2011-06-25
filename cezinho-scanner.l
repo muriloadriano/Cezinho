@@ -63,13 +63,13 @@ LETTER	[A-Za-z_]
 
 '				{ BEGIN RCHAR; }
 <RCHAR>\\		{ BEGIN ESCP; }
-<RCHAR>.		{ BEGIN ENDCHAR; }
+<RCHAR>.		{ buf = ""; buf += *yytext; BEGIN ENDCHAR; }
 <ESCP>{
-	[0ntarbf\\']	{ BEGIN ENDCHAR; }
+	[0ntarbf\\']	{ buf = "\\"; buf += *yytext; BEGIN ENDCHAR; }
 }
 <ESCP>.			{ yyerror( "FALTANDO DELIMITADOR ' EM CONSTANTE TIPO char." ); }
 
-<ENDCHAR>'		{ BEGIN INITIAL; return LITCHAR; }
+<ENDCHAR>'		{ BEGIN INITIAL; yylval.lxval = new std::string( buf ); return LITCHAR; }
 <ENDCHAR>.		{ yyerror( "FALTANDO DELIMITADOR ' EM CONSTANTE TIPO char." ); };
 
 

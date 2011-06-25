@@ -71,7 +71,11 @@ ASTNode* root;
 %%
 
 Program:
-		Decls						{ root = $1; root->reverse(); root->walk(0); }
+		Decls								{	root = $1; root->reverse();
+												scope_lvl = 0; var_symbol_tab.clear(); func_symbol_tab.clear();
+												while(!declared.empty())declared.pop(); declared.push("$");
+												root->walk(0);
+											}
 ;
 
 Decls:
@@ -81,86 +85,86 @@ Decls:
 ;
 
 VarDecl:
-		ID						{ $$ = new VarDecl(); $$->add( new DeclIdentifier($1) ); }
+		ID									{ $$ = new VarDecl(); $$->add( new DeclIdentifier($1) ); }
 		| ID '[' Constant ']'				{ $$ = new VarDecl(); $$->add( new DeclIdentifier($1, (ConstExpr*)$3 ) ); }
-		| VarDecl ',' ID				{ $$ = $1; $$->add( new DeclIdentifier($3) ); }
-		| VarDecl ',' ID '[' Constant ']'		{ $$ = $1; $$->add( new DeclIdentifier($3, (ConstExpr*)$5 ) ); }
+		| VarDecl ',' ID					{ $$ = $1; $$->add( new DeclIdentifier($3) ); }
+		| VarDecl ',' ID '[' Constant ']'	{ $$ = $1; $$->add( new DeclIdentifier($3, (ConstExpr*)$5 ) ); }
 ;
 
 FuncDecl:
 		'(' ParamDecList ')' Block			{ $$ = new FuncDecl( (ParamList*)$2, (Block*)$4 ); }
-		| '(' ')' Block					{ $$ = new FuncDecl( NULL, (Block*)$3 ); }
+		| '(' ')' Block						{ $$ = new FuncDecl( NULL, (Block*)$3 ); }
 ;
 
 ParamDecList:
-		Type ID						{ $$ = new ParamList(); $$->add( new Param( $1, $2 ) ); }
-		| Type ID '[' ']'				{ $$ = new ParamList(); $$->add( new Param( ($1==INT_T)?INT_ARRAY_T:CHAR_ARRAY_T, $2 ) ); }
+		Type ID								{ $$ = new ParamList(); $$->add( new Param( $1, $2 ) ); }
+		| Type ID '[' ']'					{ $$ = new ParamList(); $$->add( new Param( ($1==INT_T)?INT_ARRAY_T:CHAR_ARRAY_T, $2 ) ); }
 		| ParamDecList ',' Type ID			{ $$ = $1; $$->add( new Param( $3, $4 ) );	}
-		| ParamDecList ',' Type ID '[' ']'		{ $$ = $1; $$->add( new Param( ($3==INT_T)?INT_ARRAY_T:CHAR_ARRAY_T, $4 ) ); }
+		| ParamDecList ',' Type ID '[' ']'	{ $$ = $1; $$->add( new Param( ($3==INT_T)?INT_ARRAY_T:CHAR_ARRAY_T, $4 ) ); }
 ;
 
 Block:
-		'{' VarDeclList StmtList '}'			{ $$ = new Block( (VarDeclList*)$2, (StatementList*)$3 ); }
+		'{' VarDeclList StmtList '}'		{ $$ = new Block( (VarDeclList*)$2, (StatementList*)$3 ); }
 		| '{' VarDeclList '}'				{ $$ = new Block( (VarDeclList*)$2 ); }
-		| '{' StmtList '}'				{ $$ = new Block( (StatementList*)$2 ); }
+		| '{' StmtList '}'					{ $$ = new Block( (StatementList*)$2 ); }
 ;
 
 VarDeclList:
-		Type VarDecl ';'				{ $$ = new VarDeclList(); ((VarDecl*)$2)->setDataType($1); $$->add($2); }
-		| VarDeclList Type VarDecl ';'			{ $$ = $1; ((VarDecl*)$3)->setDataType($2); $$->add( $3 );  }
+		Type VarDecl ';'					{ $$ = new VarDeclList(); ((VarDecl*)$2)->setDataType($1); $$->add($2); }
+		| VarDeclList Type VarDecl ';'		{ $$ = $1; ((VarDecl*)$3)->setDataType($2); $$->add( $3 );  }
 ;
 
 Type:
-		INT						{ $$ = INT_T; }
+		INT							{ $$ = INT_T; }
 		| CHAR						{ $$ = CHAR_T; }
 ;
 
 StmtList:
 		Stmt						{ $$ = new StatementList(); $$->add( $1 ); }
-		| StmtList Stmt					{ $$ = $1; $$->add( $2 ); }
+		| StmtList Stmt				{ $$ = $1; $$->add( $2 ); }
 ;
 
 Stmt:
-		';'						{ $$ = new Statement(); }
-		| Expr ';'					{ $$ = $1; }
-		| RETURN Expr ';'				{ $$ = new Return( (Expression*)$2 ); }
-		| READ ID ';'					{ $$ = new Read( new Identifier( $2 ) ); }
+		';'									{ $$ = new Statement(); }
+		| Expr ';'							{ $$ = $1; }
+		| RETURN Expr ';'					{ $$ = new Return( (Expression*)$2 ); }
+		| READ ID ';'						{ $$ = new Read( new Identifier( $2 ) ); }
 		| READ ID '[' Expr ']' ';'			{ $$ = new Read( new Identifier( $2, (Expression*)$4) ); }
-		| WRITE Expr ';'				{ $$ = new Write( (Expression*)$2 ); }
-		| WRITELN ';'					{ $$ = new Write( new ConstExpr( CHAR_ARRAY_T, &cz_new_line ) ); }
-		| BREAK ';'					{ $$ = new Break(); }
+		| WRITE Expr ';'					{ $$ = new Write( (Expression*)$2 ); }
+		| WRITELN ';'						{ $$ = new Write( new ConstExpr( CHAR_ARRAY_T, &cz_new_line ) ); }
+		| BREAK ';'							{ $$ = new Break(); }
 		| IF '(' Expr ')' Stmt				{ $$ = new If( (Expression*)$3, (Statement*)$5 ); }
-		| IF '(' Expr ')' Stmt ELSE Stmt		{ $$ = new If( (Expression*)$3, (Statement*)$5, (Statement*)$7 ); }
+		| IF '(' Expr ')' Stmt ELSE Stmt	{ $$ = new If( (Expression*)$3, (Statement*)$5, (Statement*)$7 ); }
 		| WHILE '(' Expr ')' Stmt			{ $$ = new While( (Expression*)$3, (Statement*)$5 ); }
-		| Block						{ $$ = $1; }
+		| Block								{ $$ = $1; }
 ;
 
 Expr:
-		UnaryExpr '=' Expr				{ 	
-									Identifier* aux = dynamic_cast<Identifier*>($1);
-									if( aux == NULL ) yyerror( "Lado esquerdo de uma atribuicao deve ser um identificador." );
-									else $$ = new Assignment(aux, (Expression*)$3);
-								}
-		| BinaryExpr					{ $$ = $1; }
+		UnaryExpr '=' Expr			{ 	
+										Identifier* aux = dynamic_cast<Identifier*>($1);
+										if( aux == NULL ) yyerror( "Lado esquerdo de uma atribuicao deve ser um identificador." );
+										else $$ = new Assignment(aux, (Expression*)$3);
+									}
+		| BinaryExpr				{ $$ = $1; }
 ;
 
 BinaryExpr:
-		BinaryExpr BinOp UnaryExpr			{ $$ = new BinaryExpr( $2, (BinaryExpr*)$1, (UnaryExpr*)$3 ); }
+		BinaryExpr BinOp UnaryExpr	{ $$ = new BinaryExpr( $2, (BinaryExpr*)$1, (UnaryExpr*)$3 ); }
 		| UnaryExpr					{ $$ = $1; }
 ;
 
 UnaryExpr:
-		UnaryOp UnaryExpr				{ $$ = new UnaryExpr( $1, (UnaryExpr*)$2 ); }
-		| PostFixExpr					{ $$ = $1; }
+		UnaryOp UnaryExpr			{ $$ = new UnaryExpr( $1, (UnaryExpr*)$2 ); }
+		| PostFixExpr				{ $$ = $1; }
 ;
 
 PostFixExpr:
-		ID '(' ArgumentList ')'				{ $$ = new FuncCall( $1, (ArgList*)$3 ); }
-		| ID '(' ')'					{ $$ = new FuncCall( $1 ); }
+		ID '(' ArgumentList ')'		{ $$ = new FuncCall( $1, (ArgList*)$3 ); }
+		| ID '(' ')'				{ $$ = new FuncCall( $1 ); }
 		| ID						{ $$ = new Identifier( $1 ); }
-		| ID '[' Expr ']'				{ $$ = new Identifier( $1, (Expression*)$3 ); }
+		| ID '[' Expr ']'			{ $$ = new Identifier( $1, (Expression*)$3 ); }
 		| Constant					{ $$ = $1; }
-		| '(' Expr ')'					{ $$ = $2; }
+		| '(' Expr ')'				{ $$ = $2; }
 ;
 
 Constant:
@@ -171,11 +175,11 @@ Constant:
 
 ArgumentList:
 		Expr						{ $$ = new ArgList(); $$->add( $1 ); }
-		| ArgumentList ',' Expr				{ $$ = $1; $$->add( $3 ); }
+		| ArgumentList ',' Expr		{ $$ = $1; $$->add( $3 ); }
 ;
 
 UnaryOp:
-		'-'						{ $$ = MINUS; }
+		'-'							{ $$ = MINUS; }
 		| '!'						{ $$ = NOT; }
 ;
 
@@ -186,14 +190,14 @@ BinOp:
 ;
 
 AritmOp:
-		'+'						{ $$ = PLUS; }
+		'+'							{ $$ = PLUS; }
 		| '-'						{ $$ = MINUS; }
 		| '*'						{ $$ = TIMES; }
 		| '/'						{ $$ = DIVIDES; }
 ;
 
 RelOp:
-		'<'						{ $$ = LESS; }
+		'<'							{ $$ = LESS; }
 		| '>'						{ $$ = GREATER; }
 		| EQUAL						{ $$ = EQUALS; }
 		| NEQUAL					{ $$ = NOT_EQUAL; }
@@ -202,7 +206,7 @@ RelOp:
 ;
 
 BooleanOp:
-		OR						{ $$ = LOGICAL_OR; }
+		OR							{ $$ = LOGICAL_OR; }
 		| AND						{ $$ = LOGICAL_AND; }
 ;
 

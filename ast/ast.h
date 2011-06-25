@@ -10,6 +10,8 @@
 #ifndef CEZINHO_AST_H_
 #define CEZINHO_AST_H_
 
+#define DBG_PRINT_TREE
+
 #include <vector>
 #include <iostream>
 #include <algorithm>
@@ -52,12 +54,13 @@ enum Op
 	NOT
 };
 
-typedef std::map<std::string, std::stack<DataType> > VarSymTab;
+typedef std::map<std::string, std::stack< std::pair<DataType,int> > > VarSymTab;
 typedef std::map<std::string, FuncDecl*> FuncSymTab;
 
 static VarSymTab var_symbol_tab;
 static FuncSymTab func_symbol_tab;
-
+static std::stack< std::string > declared;
+static int scope_lvl = 0;
 
 inline std::string getTypeName(DataType t)
 {
@@ -70,7 +73,7 @@ inline std::string getTypeName(DataType t)
 }
 
 #define REP( i, N ) for( int i = 0; i < N; i++ )
-#define IDENT(depth) REP( i, depth) std::cout<< "\t";
+#define INDENT(depth) REP( i, depth) std::cout<< "\t";
 
 class ASTNode {
 	protected:
@@ -88,8 +91,11 @@ class ASTNode {
 		}
 		
 		virtual void walk( int depth ){
-			IDENT( depth )
-			std::cout << " em um ASTNode qualquer.." << std::endl;
+			
+			#ifdef DBG_PRINT_TREE
+				INDENT( depth )
+				std::cout << " em um ASTNode qualquer.." << std::endl;
+			#endif
 			for( size_t i = 0; i < child.size(); i++ ) child[i]->walk( depth+1 );
 		}
 };
@@ -106,15 +112,11 @@ class Expression : public ASTNode {
 		DataType getType() { return expr_type; }
 		
 		void walk( int depth ){
-			IDENT( depth );
-			std::cout << "generic expression tipo ";
-			switch( expr_type ){
-				case INT_T: std::cout << "int\n"; break;
-				case CHAR_T: std::cout << "char\n"; break;
-				case INT_ARRAY_T: std::cout << "int[]\n"; break;
-				case CHAR_ARRAY_T: std::cout << "char[]\n"; break;
-			}
-			for( size_t i = 0; i < child.size(); i++ ) child[i]->walk( depth+1 ); // nao deve entrar aqui..
+			#ifdef DBG_PRINT_TREE
+				INDENT( depth )
+				std::cout << "generic expression tipo " << getTypeName(expr_type) << std::endl; // acho que nao deve imprimir isso
+			#endif
+			for( size_t i = 0; i < child.size(); i++ ) child[i]->walk( depth+1 ); // nem entrar aqui..
 		}
 };
 
@@ -135,15 +137,20 @@ class Identifier : public ASTNode {
 			DataType type;
 			if ((var_symbol_tab.find(*var_name) != var_symbol_tab.end()) && 
 				!var_symbol_tab[*var_name].empty()) {
-				type = var_symbol_tab[*var_name].top();
+				type = var_symbol_tab[*var_name].top().first;
 			}
 			else {
 				std::string error = "O identificador ``" + *var_name + "'' não foi declarado nesse escopo.";
 				yyerror(error.c_str());
 			}
 			
+			#ifdef DBG_PRINT_TREE
+				INDENT(depth)
+				std::cout << "variavel " << getTypeName( var_type ) << " " << *(var_name) << std::endl;
+			#endif
+			
 			if ((type == INT_ARRAY_T || type == CHAR_ARRAY_T)) {
-				if (child[0] == NULL) {
+				if (child[0] == NULL ) {
 					std::string error = "Deve ser passada a posição do array ``" + *var_name
 						+ "'' a ser acessada.";
 					yyerror(error.c_str());
@@ -151,34 +158,29 @@ class Identifier : public ASTNode {
 				else {
 					Expression* pos = static_cast<Expression*>(child[0]);
 					
+					#ifdef DBG_PRINT_TREE
+						INDENT(depth)
+						std::cout << " na posicao : " << std::endl;
+					#endif
+					
+					pos->walk( depth+1 );
+					
+					#ifdef DBG_PRINT_TREE
+						std::cout << std::endl;
+					#endif
+					
 					if (pos->getType() != INT_T) {
 						std::string error = "Erro ao acessar o array ``" + *var_name
 							+ "'': a posição deve ser uma expressão do tipo int.";
 						yyerror(error.c_str());	
 					}
 				}
-			}
+				// Se o identificador esta sendo acessado corretamente o tipo do identificador nao eh mais array?
+				if( type == INT_ARRAY_T ) type = INT_T;
+				if( type == CHAR_ARRAY_T ) type = CHAR_T;
+			} 
 			
-			this->var_type = type;
-			
-			// DEBUG
-			IDENT( depth );
-			
-			std::cout << "variavel ";
-			switch( var_type ){
-				case INT_T: std::cout << "int "; break;
-				case CHAR_T: std::cout << "char "; break;
-				case INT_ARRAY_T: std::cout << "int[] "; break;
-				case CHAR_ARRAY_T: std::cout << "char[] "; break;
-			}
-			std::cout << *(var_name);
-			
-			if (child[0] != NULL) {
-				std::cout << " na posicao :" << std::endl;
-				child[0]->walk( depth+1 );
-			}
-			std::cout << std::endl;
-			// DEBUG
+			this->var_type = type;			
 		}
 };
 
@@ -186,7 +188,9 @@ class Statement : public ASTNode {
 	public:
 		
 		void walk( int depth ){
-			IDENT( depth ); std::cout << "fake statement" << std::endl;
+			#ifdef DBG_PRINT_TREE
+				INDENT(depth) std::cout << "fake statement" << std::endl;
+			#endif
 		}
 };
 
@@ -197,9 +201,11 @@ class While : public Statement {
 			child[0] = expr; child[1] = stmt;
 		}
 		
-		void walk( int depth ){
-			IDENT( depth );
-			std::cout << "while " << std::endl;
+		void walk( int depth ){	
+			#ifdef DBG_PRINT_TREE
+				INDENT(depth)
+				std::cout << "while " << std::endl;
+			#endif
 			child[0]->walk( depth+1 );
 			child[1]->walk( depth+1 );
 		}
@@ -217,9 +223,11 @@ class If : public Statement {
 		}
 		
 		void walk( int depth ){
-			IDENT( depth );
-			if( child.size() == 2 ) std::cout << "open If" << std::endl;
-			else std::cout << "elsed If" << std::endl;
+			#ifdef DBG_PRINT_TREE
+				INDENT(depth)
+				if( child.size() == 2 ) std::cout << "open If" << std::endl;
+				else std::cout << "elsed If" << std::endl;
+			#endif
 			for( size_t i = 0; i < child.size(); i++ ) child[i]->walk( depth+1 );
 		}
 };
@@ -233,9 +241,11 @@ class Return : public Statement {
 		
 		DataType getReturnType() { return this->return_type; }
 		
-		void walk( int depth ){
-			IDENT( depth );
-			std::cout << " return " << std::endl;
+		void walk( int depth ){	
+			#ifdef DBG_PRINT_TREE
+				INDENT(depth)
+				std::cout << " return " << std::endl;
+			#endif
 			return_value->walk(depth + 1);
 			
 			this->return_type = return_value->getType();
@@ -249,8 +259,10 @@ class Read : public Statement {
 		Read( Identifier* identifier ) : var_id( identifier ) {}
 		
 		void walk( int depth ){
-			IDENT( depth );
-			std::cout << "read " << std::endl;
+			#ifdef DBG_PRINT_TREE
+				INDENT(depth)
+				std::cout << "read " << std::endl;
+			#endif
 			var_id->walk( depth+1 );
 		}
 };
@@ -261,17 +273,20 @@ class Write : public Statement {
 		Write( Expression* expr ){ child.resize( 1 ); child[0] = expr; }
 		
 		void walk( int depth ){
-			IDENT( depth );
-			std::cout << "write" << std::endl;
+			#ifdef DBG_PRINT_TREE
+				INDENT(depth)
+				std::cout << "write" << std::endl;
+			#endif
 			child[0]->walk( depth+1 );
 		}
 };
 
-class Break : public Statement {
-	public:
-		
+class Break : public Statement {  // Verificar se o break esta dentro de um loop..
+	public:		
 		void walk( int depth ){
-			IDENT( depth ); std::cout << "break" << std::endl;
+			#ifdef DBG_PRINT_TREE
+				INDENT(depth) std::cout << "break" << std::endl;
+			#endif
 		}	
 };
 
@@ -284,7 +299,9 @@ class StatementList : public ASTNode {
 	}
 	
 	void walk( int depth ){
-		IDENT( depth ); std::cout << "executando as instrucoes:" << std::endl;
+		#ifdef DBG_PRINT_TREE
+			INDENT(depth) std::cout << "executando as instrucoes:" << std::endl;
+		#endif
 		for( size_t i = 0; i < child.size(); i++ ) child[i]->walk( depth+1 );
 	}
 };
@@ -293,7 +310,9 @@ class VarDeclList : public ASTNode {
 	public:
 		
 	void walk( int depth ){
-		IDENT( depth ); std::cout << "declaracoes de variaveis:" << std::endl;
+		#ifdef DBG_PRINT_TREE
+			INDENT(depth) std::cout << "declaracoes de variaveis:" << std::endl;
+		#endif
 		for( size_t i = 0; i < child.size(); i++ ) child[i]->walk( depth+1 );
 	}
 };
@@ -310,15 +329,10 @@ class Param : public ASTNode{
 		DataType getParamType() { return param_type; }
 		
 		void walk( int depth ){
-			IDENT( depth ); 
-			std::cout << "parametro " << *(param_name) << ", tipo ";
-			switch( param_type ){
-				case INT_T: std::cout << "int "; break;
-				case CHAR_T: std::cout << "char "; break;
-				case INT_ARRAY_T: std::cout << "int[] "; break;
-				case CHAR_ARRAY_T: std::cout << "char[] "; break;
-			}
-			std::cout << std::endl;
+			#ifdef DBG_PRINT_TREE
+				INDENT(depth) 
+				std::cout << "parametro " << *(param_name) << ", tipo " << getTypeName(param_type) << std::endl;
+			#endif
 		}
 		
 		DataType getType() { return this->param_type; }
@@ -327,22 +341,23 @@ class Param : public ASTNode{
 class ParamList : public ASTNode {
 	public:	
 		void walk( int depth ){
-			IDENT( depth );
-			std::cout << "lista de parametros:" << std::endl;
-		
-			std::set<std::string> params;
-		
+			#ifdef DBG_PRINT_TREE
+				INDENT(depth)
+				std::cout << "lista de parametros:" << std::endl;
+			#endif
+			
 			Param* param;
 			for (size_t i = 0; i < child.size(); i++) {
 				child[i]->walk(depth + 1);
 			
 				param = static_cast<Param*>(child[i]);
-				if (params.find(*param->getParamName()) != params.end()) {
+				if (var_symbol_tab.find(*param->getParamName()) != var_symbol_tab.end()) {
 					std::string error = "Parâmetro " + *param->getParamName() + " redeclarado.";
 					yyerror(error.c_str());
 				}
 				
-				params.insert(*param->getParamName());
+				declared.push( *param->getParamName() );
+				var_symbol_tab[ *param->getParamName() ].push( std::make_pair( param->getParamType(), scope_lvl ) );
 			}
 		}
 	
@@ -356,8 +371,10 @@ class ArgList : public ASTNode {
 	public:
 		
 		void walk( int depth ){
-			IDENT( depth );
-			std::cout << "lista de argumentos:" << std::endl;
+			#ifdef DBG_PRINT_TREE
+				INDENT(depth)
+				std::cout << "lista de argumentos:" << std::endl;
+			#endif
 			for( size_t i = 0; i < child.size(); i++ ) child[i]->walk( depth+1 );
 		}
 	
@@ -390,8 +407,11 @@ class Block : public Statement {
 		bool hasError() { return return_error; }
 		
 		void walk( int depth ){
-			IDENT( depth );
-			std::cout << "iniciando num novo bloco de instrucoes" << std::endl;
+			#ifdef  DBG_PRINT_TREE
+				INDENT(depth) std::cout << "iniciando bloco.." << std::endl;
+			#endif
+			
+			scope_lvl++; declared.push( "$" );
 			
 			this->has_return = false;
 				
@@ -438,7 +458,16 @@ class Block : public Statement {
 				}
 			}
 			
-			IDENT( depth ); std::cout << "finalizando o bloco.. aqui atualiza a tabela de simbolos" << std::endl;
+			#ifdef DBG_PRINT_TREE
+				INDENT(depth) std::cout << "finalizando o bloco.. aqui atualiza a tabela de simbolos" << std::endl;
+			#endif
+			scope_lvl--;
+			while( declared.top() != "$" ){
+				std::string var_ident = declared.top(); declared.pop();
+				var_symbol_tab[ var_ident ].pop();
+				if( var_symbol_tab[ var_ident ].empty() ) var_symbol_tab.erase( var_ident );
+			}
+			declared.pop();
 		}
 };
 
@@ -463,7 +492,16 @@ class FuncDecl : public ASTNode {
 		ParamList* getParamList() { return static_cast<ParamList*>(this->child[0]); }
 		
 		void walk( int depth ){
-			IDENT( depth );
+			
+			#ifdef DBG_PRINT_TREE
+				INDENT(depth)
+				std::cout << "declarando funcao " << *(func_name) << ", tipo " << getTypeName(func_type) << std::endl;
+			#endif
+			
+			if (var_symbol_tab.find(*func_name) != var_symbol_tab.end()) {
+				std::string error = "A função " + *func_name + " nao pode ter o mesmo nome que uma variavel.";
+				yyerror( error.c_str() );
+			}
 			
 			if (func_symbol_tab.find(*func_name) != func_symbol_tab.end()) {
 				std::string error = "Redeclaração da função " + *func_name + ".";
@@ -473,22 +511,14 @@ class FuncDecl : public ASTNode {
 				func_symbol_tab[*func_name] = this;
 			}
 			
-			std::cout << "declarando funcao " << *(func_name) << ", tipo ";
-			switch( func_type ){
-				case INT_T: std::cout << "int "; break;
-				case CHAR_T: std::cout << "char "; break;
-				case INT_ARRAY_T: std::cout << "int[] "; break;
-				case CHAR_ARRAY_T: std::cout << "char[] "; break;
-			}
-			std::cout << std::endl;
-			
+			scope_lvl++; declared.push( "$" );
 			if (child[0] != NULL) {
 				child[0]->walk(depth+1);
 			}
-			
-			child[1]->walk(depth + 1);
+			scope_lvl--;
 			
 			Block* block = static_cast<Block*>(child[1]);
+			block->walk( depth+1 );
 			
 			if (block->hasReturn()) {
 				if (block->hasError()) {
@@ -503,6 +533,14 @@ class FuncDecl : public ASTNode {
 					yyerror(error.c_str());
 				}
 			}
+			
+			while( declared.top() != "$" ){
+				std::string var_ident = declared.top(); declared.pop();
+				var_symbol_tab[ var_ident ].pop();
+				if( var_symbol_tab[ var_ident ].empty() ) var_symbol_tab.erase( var_ident );
+			}
+			declared.pop();
+			
 		}
 };
 
@@ -520,8 +558,11 @@ class FuncCall : public Expression {
 		}
 		
 		void walk( int depth ){
-			IDENT( depth );
-			std::cout << "chamando funcao " << *(func_identifier) << std::endl;
+			#ifdef DBG_PRINT_TREE
+				INDENT(depth)
+				std::cout << "chamando funcao " << *(func_identifier) << std::endl;
+			#endif
+			
 			if (func_symbol_tab.find(*func_identifier) != func_symbol_tab.end()) {
 				FuncDecl* func = func_symbol_tab[*func_identifier];
 				ArgList* args = static_cast<ArgList*>(child[0]);
@@ -555,8 +596,8 @@ class FuncCall : public Expression {
 						param = static_cast<Param*>(paramChildren[i]);
 						arg   = static_cast<Expression*>(argChildren[i]);
 						
-						var_symbol_tab[*param->getParamName()].push(param->getParamType());
-						
+						var_symbol_tab[*param->getParamName()].push( std::make_pair(param->getParamType(), scope_lvl) );
+						declared.push( *param->getParamName() );
 						if (param->getType() != arg->getType()) {
 							std::string error = "Na chamada de função ``" + *func_identifier + 
 								"'': tipos de parâmetros incompatíveis.";
@@ -587,13 +628,15 @@ class UnaryExpr : public Expression {
 		}
 		
 		void walk( int depth ){
-			IDENT( depth );
-			std::cout << "expressao unaria ";
-			switch( oper ){
-				case MINUS: std::cout << "-" << std::endl; break;
-				case NOT: std::cout << "!" << std::endl; break;
-				default: std::cout << " isso nao devia ser impresso" << std::endl;
-			}
+			#ifdef DBG_PRINT_TREE
+				INDENT(depth)
+				std::cout << "expressao unaria ";
+				switch( oper ){
+					case MINUS: std::cout << "-" << std::endl; break;
+					case NOT: std::cout << "!" << std::endl; break;
+					default: std::cout << " isso nao devia ser impresso" << std::endl;
+				}
+			#endif	
 			child[0]->walk( depth+1 );
 		}
 };
@@ -609,23 +652,25 @@ class BinaryExpr : public Expression {
 		}
 		
 		void walk( int depth ){
-			IDENT( depth );
-			std::cout << "expressao binaria ";
-			switch( oper ){
-				case PLUS: std::cout << "+" << std::endl; break;
-				case MINUS: std::cout << "-" << std::endl; break;
-	        	case TIMES: std::cout << "*" << std::endl; break;
-				case DIVIDES: std::cout << "/" << std::endl; break;
-				case GREATER: std::cout << ">" << std::endl; break;
-				case LESS: std::cout << "<" << std::endl; break;
-				case EQUALS: std::cout << "==" << std::endl; break;
-				case NOT_EQUAL: std::cout << "!=" << std::endl; break;
-				case LESS_EQUAL: std::cout << "<=" << std::endl; break;
-				case GREATER_EQUAL: std::cout << ">=" << std::endl; break;
-				case LOGICAL_OR: std::cout << "||" << std::endl; break;
-				case LOGICAL_AND: std::cout << "&&" << std::endl; break;
-				default: std::cout << "nao devia imprimir isso" << std::endl;
-			}
+			#ifdef DBG_PRINT_TREE
+				INDENT(depth)
+				std::cout << "expressao binaria ";
+				switch( oper ){
+					case PLUS: std::cout << "+" << std::endl; break;
+					case MINUS: std::cout << "-" << std::endl; break;
+	        		case TIMES: std::cout << "*" << std::endl; break;
+					case DIVIDES: std::cout << "/" << std::endl; break;
+					case GREATER: std::cout << ">" << std::endl; break;
+					case LESS: std::cout << "<" << std::endl; break;
+					case EQUALS: std::cout << "==" << std::endl; break;
+					case NOT_EQUAL: std::cout << "!=" << std::endl; break;
+					case LESS_EQUAL: std::cout << "<=" << std::endl; break;
+					case GREATER_EQUAL: std::cout << ">=" << std::endl; break;
+					case LOGICAL_OR: std::cout << "||" << std::endl; break;
+					case LOGICAL_AND: std::cout << "&&" << std::endl; break;
+					default: std::cout << "nao devia imprimir isso" << std::endl;
+				}
+			#endif
 			child[0]->walk( depth+1 );
 			child[1]->walk( depth+1 );
 		}
@@ -638,18 +683,20 @@ class Assignment : public Expression {
 			child[0] = lhs;
 			child[1] = rhs;
 		}
-		
+	
 		void walk( int depth ){
-			IDENT( depth );
+			#ifdef DBG_PRINT_TREE
+				INDENT(depth)
+				std::cout << "fazendo atribuicao " << std::endl;
+			#endif 
 			
-			std::cout << "fazendo atribuicao " << std::endl;
 			child[0]->walk(depth + 1);
 			child[1]->walk(depth + 1);
 			
 			Identifier* lhs = static_cast<Identifier*>(child[0]);
 			Expression* rhs = static_cast<Expression*>(child[1]);
 			
-			if (lhs->getVarType() != rhs->getType()) {
+			if ( lhs->getVarType() != rhs->getType() ) {
 				std::string error = "Impossível converter " + getTypeName(rhs->getType()) +
 					" para " + getTypeName(lhs->getVarType()) + " na atribuição.";
 					
@@ -681,7 +728,9 @@ class ConstExpr : public Expression {
 		}
 		
 		void walk( int depth ){
-			IDENT( depth ); std::cout << *value << std::endl;
+			#ifdef DBG_PRINT_TREE
+				INDENT(depth) std::cout << *value << std::endl;
+			#endif
 		}
 };
 
@@ -697,19 +746,43 @@ class DeclIdentifier : public ASTNode {
 		int getVarSize() { return this->var_size->getIntValue(); }
 		bool isArray() { return (var_size != NULL); }
 		
-		void walk(int depth) {
-			IDENT(depth);
-			std::cout << *(var_name);
-			if (var_size != NULL) {
+		void walk(int depth, DataType var_type ){
+			
+			if( func_symbol_tab.find( *var_name ) != func_symbol_tab.end() ){
+				std::string error = "Redeclaração de " + *var_name + ".";
+				yyerror( error.c_str() );
+			}
+			if( var_symbol_tab.find( *var_name ) != var_symbol_tab.end() && var_symbol_tab[*var_name].top().second == scope_lvl ){
+				std::string error = "Redeclaracao da variavel " + *var_name + "."; 
+				yyerror( error.c_str() );
+			}
+			
+			#ifdef DBG_PRINT_TREE
+				INDENT(depth)
+				std::cout << *(var_name) << " ";
+			#endif
+			
+			if( var_size != NULL ){
 				if (var_size->getType() != INT_T) {
 					std::string error = "Na declaração da variável ``" + *var_name
 						+ "'': O tipo do tamanho de um array deve ser um int.";
 					
 					yyerror(error.c_str());
 				}
-				std::cout << " com tamanho " << var_size->getIntValue();
+				if( var_type == INT_T ) var_type = INT_ARRAY_T;
+				if( var_type == CHAR_T ) var_type = CHAR_ARRAY_T;
+				
+				#ifdef DBG_PRINT_TREE
+					std::cout << " com tamanho " << var_size->getIntValue();
+				#endif
 			}
-			std::cout << std::endl;
+			
+			var_symbol_tab[*var_name].push( std::make_pair( var_type, scope_lvl ) );
+			declared.push( *var_name );
+			
+			#ifdef DBG_PRINT_TREE
+				std::cout << std::endl;
+			#endif
 		}
 };
 
@@ -720,45 +793,12 @@ class VarDecl : public ASTNode {
 		void setDataType(DataType dt) { var_type = dt; }
 		
 		void walk(int depth) {
-			IDENT( depth );
-			std::cout << " declarando variaveis tipo ";
-			switch( var_type ){
-				case INT_T: std::cout << "int\n"; break;
-				case CHAR_T: std::cout << "char\n"; break;
-				case INT_ARRAY_T: std::cout << "int[]\n"; break;
-				case CHAR_ARRAY_T: std::cout << "char[]\n"; break;
-			}
-			for (size_t i = 0; i < child.size(); i++) child[i]->walk(depth+1);
+			#ifdef DBG_PRINT_TREE
+				INDENT(depth)
+				std::cout << " declarando variaveis tipo " << getTypeName(var_type) << std::endl;
+			#endif
 			
-			std::set<std::string> declared;
-			DeclIdentifier* id;
-			
-			for (size_t i = 0; i < child.size(); i++) {
-				id = static_cast<DeclIdentifier*>(child[i]);
-				
-				if (declared.find(*(id->getVarName())) != declared.end()) {
-					std::string error = "Redeclaração do identificador " + *id->getVarName() + ".";
-					
-					yyerror(error.c_str());
-				}
-				
-				declared.insert(*(id->getVarName()));
-				
-				DataType type;
-				if (id->isArray()) {
-					if (this->var_type == INT_T) {
-						type = INT_ARRAY_T;
-					}
-					else {
-						type = CHAR_ARRAY_T;
-					}
-				}
-				else {
-					type = this->var_type;
-				}
-				
-				var_symbol_tab[*(id->getVarName())].push(type);
-			}
+			for (size_t i = 0; i < child.size(); i++) ((DeclIdentifier*)child[i])->walk(depth+1, var_type);	
 		}
 };
 
