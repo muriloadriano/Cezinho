@@ -10,7 +10,6 @@
 #ifndef CEZINHO_AST_H_
 #define CEZINHO_AST_H_
 
-#define DBG_PRINT_TREE
 
 #include <vector>
 #include <iostream>
@@ -135,6 +134,7 @@ class Identifier : public ASTNode {
 		
 		void walk(int depth) {
 			DataType type;
+			
 			if ((var_symbol_tab.find(*var_name) != var_symbol_tab.end()) && 
 				!var_symbol_tab[*var_name].empty()) {
 				type = var_symbol_tab[*var_name].top().first;
@@ -143,6 +143,10 @@ class Identifier : public ASTNode {
 				std::string error = "O identificador ``" + *var_name + "'' não foi declarado nesse escopo.";
 				yyerror(error.c_str());
 			}
+			
+			#ifdef DBG_SYM_TAB
+				std::cout << *var_name << " @ symbol_tab as " << getTypeName( type ) << std::endl;
+			#endif 
 			
 			#ifdef DBG_PRINT_TREE
 				INDENT(depth)
@@ -357,6 +361,9 @@ class ParamList : public ASTNode {
 				}
 				
 				declared.push( *param->getParamName() );
+				#ifdef DBG_SYM_TAB
+					std::cout << "adicionando " << *param->getParamName() << " " << getTypeName( param->getParamType() ) << std::endl;
+				#endif
 				var_symbol_tab[ *param->getParamName() ].push( std::make_pair( param->getParamType(), scope_lvl ) );
 			}
 		}
@@ -464,6 +471,9 @@ class Block : public Statement {
 			scope_lvl--;
 			while( declared.top() != "$" ){
 				std::string var_ident = declared.top(); declared.pop();
+				#ifdef DBG_SYM_TAB
+					std::cout << "removendo " << getTypeName( var_symbol_tab[var_ident].top().first ) << " " << var_ident << std::endl;
+				#endif
 				var_symbol_tab[ var_ident ].pop();
 				if( var_symbol_tab[ var_ident ].empty() ) var_symbol_tab.erase( var_ident );
 			}
@@ -536,6 +546,9 @@ class FuncDecl : public ASTNode {
 			
 			while( declared.top() != "$" ){
 				std::string var_ident = declared.top(); declared.pop();
+				#ifdef DBG_SYM_TAB
+					std::cout << "removendo " << getTypeName( var_symbol_tab[var_ident].top().first ) << std::endl;
+				#endif
 				var_symbol_tab[ var_ident ].pop();
 				if( var_symbol_tab[ var_ident ].empty() ) var_symbol_tab.erase( var_ident );
 			}
@@ -587,6 +600,9 @@ class FuncCall : public Expression {
 					yyerror(error.c_str());
 				}
 				else if (func->getParamList() != NULL && args != NULL) {
+					
+					child[0]->walk(depth + 1);
+					
 					const std::vector<ASTNode*>& paramChildren = func->getParamList()->getChild();
 					const std::vector<ASTNode*>& argChildren = args->getChild();
 					
@@ -596,9 +612,7 @@ class FuncCall : public Expression {
 						param = static_cast<Param*>(paramChildren[i]);
 						arg   = static_cast<Expression*>(argChildren[i]);
 						
-						var_symbol_tab[*param->getParamName()].push( std::make_pair(param->getParamType(), scope_lvl) );
-						declared.push( *param->getParamName() );
-						if (param->getType() != arg->getType()) {
+						if (param->getParamType() != arg->getType()) {
 							std::string error = "Na chamada de função ``" + *func_identifier + 
 								"'': tipos de parâmetros incompatíveis.";
 								
@@ -614,7 +628,6 @@ class FuncCall : public Expression {
 				yyerror(error.c_str());
 			}
 			
-			if (child[0] != NULL) child[0]->walk(depth + 1);
 		}
 };
 
@@ -777,6 +790,10 @@ class DeclIdentifier : public ASTNode {
 				#endif
 			}
 			
+			#ifdef DBG_SYM_TAB
+				std::cout << "adicionando " << *var_name << " " << getTypeName( var_type ) << std::endl;
+			#endif
+
 			var_symbol_tab[*var_name].push( std::make_pair( var_type, scope_lvl ) );
 			declared.push( *var_name );
 			
