@@ -10,9 +10,6 @@
 #ifndef CEZINHO_AST_H_
 #define CEZINHO_AST_H_
 
-//#define DBG_PRINT_TREE
-//#define DBG_SYM_TAB
-
 #include <vector>
 #include <iostream>
 #include <algorithm>
