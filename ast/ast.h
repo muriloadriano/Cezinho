@@ -73,6 +73,23 @@ inline std::string getTypeName(DataType t)
 	}
 }
 
+inline std::string getOperText(Op oper ){
+	switch( oper ){
+		case PLUS: return "+";
+		case MINUS: return "-";
+		case TIMES: return "*";
+		case DIVIDES: return "/";
+		case GREATER: return ">";
+		case LESS: return "<";
+		case EQUALS: return "==";
+		case NOT_EQUAL: return "!=";
+		case LESS_EQUAL: return "<=";
+		case GREATER_EQUAL: return ">=";
+		case LOGICAL_OR: return "||";
+		case LOGICAL_AND: return "&&";
+	}
+}
+
 #define REP( i, N ) for( int i = 0; i < N; i++ )
 #define INDENT(depth) REP( i, depth) std::cout<< "\t";
 
@@ -152,7 +169,7 @@ class Identifier : public ASTNode {
 			
 			#ifdef DBG_PRINT_TREE
 				INDENT(depth)
-				std::cout << "variavel " << getTypeName( var_type ) << " " << *(var_name) << std::endl;
+				std::cout << "variavel " << getTypeName( type ) << " " << *(var_name) << std::endl;
 			#endif
 			
 			if ((type == INT_ARRAY_T || type == CHAR_ARRAY_T)) {
@@ -652,6 +669,7 @@ class UnaryExpr : public Expression {
 					default: std::cout << " isso nao devia ser impresso" << std::endl;
 				}
 			#endif	
+			this->expr_type = ((Expression*)child[0])->getType();
 			// Checagem de tipo aqui?
 			child[0]->walk( depth+1 );
 		}
@@ -670,26 +688,19 @@ class BinaryExpr : public Expression {
 		void walk( int depth ){
 			#ifdef DBG_PRINT_TREE
 				INDENT(depth)
-				std::cout << "expressao binaria ";
-				switch( oper ){
-					case PLUS: std::cout << "+" << std::endl; break;
-					case MINUS: std::cout << "-" << std::endl; break;
-	        		case TIMES: std::cout << "*" << std::endl; break;
-					case DIVIDES: std::cout << "/" << std::endl; break;
-					case GREATER: std::cout << ">" << std::endl; break;
-					case LESS: std::cout << "<" << std::endl; break;
-					case EQUALS: std::cout << "==" << std::endl; break;
-					case NOT_EQUAL: std::cout << "!=" << std::endl; break;
-					case LESS_EQUAL: std::cout << "<=" << std::endl; break;
-					case GREATER_EQUAL: std::cout << ">=" << std::endl; break;
-					case LOGICAL_OR: std::cout << "||" << std::endl; break;
-					case LOGICAL_AND: std::cout << "&&" << std::endl; break;
-					default: std::cout << "nao devia imprimir isso" << std::endl;
-				}
+				std::cout << "expressao binaria " << getOperText( oper ) << std::endl;
 			#endif
 			child[0]->walk( depth+1 );
 			child[1]->walk( depth+1 );
-			if( oper != LOGICAL_OR && oper != LOGICAL_AND && ((BinaryExpr*)child[0])->getType() != ((UnaryExpr*)child[1])->getType() ) yyerror( "Tipos incompativeis." );
+			if( oper != LOGICAL_OR && oper != LOGICAL_AND && ((BinaryExpr*)child[0])->getType() != ((UnaryExpr*)child[1])->getType() ){
+				std::string error = "Em " + getOperText( oper ) + " tipos incompativeis. " + 
+									getTypeName( ((BinaryExpr*)child[0])->getType() ) + " e " + getTypeName( ((UnaryExpr*)child[1])->getType() );
+				yyerror( error.c_str() );
+			} else this->expr_type = ((BinaryExpr*)child[0])->getType();
+			#ifdef DBG_PRINT_TREE
+				INDENT(depth)
+				std::cout << getTypeName( this->getType() ) << " " << getOperText( oper ) << std::endl;
+			#endif
 		}
 };
 
@@ -718,7 +729,7 @@ class Assignment : public Expression {
 					" para " + getTypeName(lhs->getVarType()) + " na atribuição.";
 					
 				yyerror(error.c_str());
-			}
+			} else this->expr_type = lhs->getVarType();
 		}
 };
 
