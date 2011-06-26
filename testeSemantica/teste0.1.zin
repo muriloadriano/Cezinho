@@ -1,24 +1,19 @@
-char fudeu()
-{
-	int a;
-	char b;
-	
-	{
-		return b;
+int x;
+
+int a() {
+	while (1 == 1) {
+		if (1 == 2) {
+			while ('z' < 'a') {
+				{
+					return '1';
+				}
+			}
+		}
 	}
-	
-	{
-		return 'x';
-	}
-	
-	return a;
 }
 
 int main(){
-	
-	char c;
-	
-	c = fudeu();
-	
+	int x;
+	x = a();
 	return 1;
 }

@@ -24,7 +24,7 @@ void yyerror(const char *, int);
 
 class Identifier;
 class FuncDecl;
-struct Variable;
+//struct Variable;
 class ConstExpr;
 
 enum DataType 
@@ -115,8 +115,6 @@ class ASTNode {
 		}
 };
 
-
-
 class Expression : public ASTNode {
 	protected:
 		DataType expr_type;
@@ -204,9 +202,35 @@ class Identifier : public ASTNode {
 		}
 };
 
-class Statement : public ASTNode {
+class StatementList : public ASTNode {
+	public:
+	
+	const std::vector<ASTNode*>& getChildren()
+	{
+		return this->child;
+	}
+	
+	void walk( int depth ){
+		#ifdef DBG_PRINT_TREE
+			INDENT(depth) std::cout << "executando as instrucoes:" << std::endl;
+		#endif
+		for( size_t i = 0; i < child.size(); i++ ) child[i]->walk( depth+1 );
+	}
+};
+
+class VarDeclList : public ASTNode {	
 	public:
 		
+	void walk( int depth ){
+		#ifdef DBG_PRINT_TREE
+			INDENT(depth) std::cout << "declaracoes de variaveis:" << std::endl;
+		#endif
+		for( size_t i = 0; i < child.size(); i++ ) child[i]->walk( depth+1 );
+	}
+};
+
+class Statement : public ASTNode {
+	public:
 		void walk( int depth ){
 			#ifdef DBG_PRINT_TREE
 				INDENT(depth) std::cout << "fake statement" << std::endl;
@@ -214,42 +238,17 @@ class Statement : public ASTNode {
 		}
 };
 
-class While : public Statement {
-	public:
-		While( Expression* expr, Statement* stmt ) {
-			child.resize(2);
-			child[0] = expr; child[1] = stmt;
-		}
-		
-		void walk( int depth ){	
-			#ifdef DBG_PRINT_TREE
-				INDENT(depth)
-				std::cout << "while " << std::endl;
-			#endif
-			child[0]->walk( depth+1 );
-			child[1]->walk( depth+1 );
-		}
-};
-
-class If : public Statement {
-	public:
-		If( Expression* expr, Statement* stmt ){
-			child.resize(2);
-			child[0] = expr; child[1] = stmt;
-		};
-		If( Expression* expr, Statement* stmt, Statement* elsestmt ){
-			child.resize(3);
-			child[0] = expr; child[1] = stmt; child[2] = elsestmt;
-		}
-		
-		void walk( int depth ){
-			#ifdef DBG_PRINT_TREE
-				INDENT(depth)
-				if( child.size() == 2 ) std::cout << "open If" << std::endl;
-				else std::cout << "elsed If" << std::endl;
-			#endif
-			for( size_t i = 0; i < child.size(); i++ ) child[i]->walk( depth+1 );
-		}
+class HasBlock
+{
+	protected:
+		bool has_return;
+		DataType return_type;
+		bool return_error;
+	
+	public:	
+		bool hasReturn() { return has_return; }
+		DataType getReturnType() { return return_type; }
+		bool hasError() { return return_error; }	
 };
 
 class Return : public Statement {
@@ -269,6 +268,145 @@ class Return : public Statement {
 			return_value->walk(depth + 1);
 			
 			this->return_type = return_value->getType();
+		}
+};
+
+class Block : public Statement, public HasBlock {
+	
+	public:
+		Block(VarDeclList* var_decl, StatementList* statements = NULL) {
+			child.resize(2);
+			child[0] = var_decl;
+			child[1] = statements;
+		}
+		
+		Block(StatementList* statements){
+			child.resize(2);
+			child[0] = NULL;
+			child[1] = statements;
+		}
+		
+		void walk( int depth ){
+			#ifdef  DBG_PRINT_TREE
+				INDENT(depth) std::cout << "iniciando bloco.." << std::endl;
+			#endif
+			
+			scope_lvl++; declared.push( "$" );
+			
+			this->has_return = false;
+				
+			if (child[0] != NULL) child[0]->walk(depth + 1);
+			
+			if (child[1] != NULL) {
+				 child[1]->walk(depth + 1);
+				
+				StatementList* stmt = static_cast<StatementList*>(child[1]);
+				const std::vector<ASTNode*> children = stmt->getChildren();
+				
+				Return* ret;
+				HasBlock* block;
+				for (size_t i = 0; i < children.size(); ++i) {
+					ret = dynamic_cast<Return*>(children[i]);
+					
+					if (ret != NULL) {
+						if (!has_return) {
+							this->has_return = true;
+							this->return_type = ret->getReturnType();
+						}
+						else if (return_type != ret->getReturnType()) {
+							this->return_error = true;
+						}
+					}
+					else {
+						block = dynamic_cast<HasBlock*>(children[i]);
+						if (block != NULL) {
+							if (block->hasReturn()) {
+								if (this->has_return) {
+									if (this->return_type != block->getReturnType()) {
+										this->return_error = true;
+									}
+								}
+								else {
+									this->return_error |= block->hasError();
+									this->return_type = block->getReturnType();
+								}
+							
+								this->has_return = true;
+							}
+						}
+					}
+				}
+			}
+			
+			#ifdef DBG_PRINT_TREE
+				INDENT(depth) std::cout << "finalizando o bloco.. aqui atualiza a tabela de simbolos" << std::endl;
+			#endif
+			scope_lvl--;
+			while( declared.top() != "$" ){
+				std::string var_ident = declared.top(); declared.pop();
+				#ifdef DBG_SYM_TAB
+					std::cout << "removendo " << getTypeName( var_symbol_tab[var_ident].top().first ) << " " << var_ident << std::endl;
+				#endif
+				var_symbol_tab[ var_ident ].pop();
+				if( var_symbol_tab[ var_ident ].empty() ) var_symbol_tab.erase( var_ident );
+			}
+			declared.pop();
+		}
+};
+
+class If : public Statement, public HasBlock {
+	public:
+		If(Expression* expr, Statement* stmt, Statement* elsestmt = NULL) {
+			child.resize(3);
+			child[0] = expr; 
+			child[1] = stmt;
+			child[2] = elsestmt;
+		}
+		
+		void walk(int depth) {
+			#ifdef DBG_PRINT_TREE
+				INDENT(depth)
+				if( child.size() == 2 ) std::cout << "open If" << std::endl;
+				else std::cout << "elsed If" << std::endl;
+			#endif
+			
+			child[0]->walk(depth + 1);
+			child[1]->walk(depth + 1);
+			
+			Block* block = static_cast<Block*>(child[1]);
+			this->has_return   = block->hasReturn();
+			this->return_error = block->hasError();
+			this->return_type  = block->getReturnType();			
+			
+			if (child[2] != NULL) {
+				block = static_cast<Block*>(child[2]);
+				this->has_return   |= block->hasReturn();
+				this->return_error |= block->hasError();
+				this->return_type   = block->getReturnType(); 
+			}
+		}
+};
+
+class While : public Statement, public HasBlock {
+	public:
+		While(Expression* expr, Statement* stmt) {
+			child.resize(2);
+			child[0] = expr; child[1] = stmt;
+		}
+		
+		void walk( int depth ){	
+			#ifdef DBG_PRINT_TREE
+				INDENT(depth)
+				std::cout << "while " << std::endl;
+			#endif
+			
+			child[0]->walk(depth + 1);
+			child[1]->walk(depth + 1);
+			
+			Block* block = static_cast<Block*>(child[1]);
+			this->has_return   = block->hasReturn();
+			this->return_error = block->hasError();
+			this->return_type  = block->getReturnType();
 		}
 };
 
@@ -308,33 +446,6 @@ class Break : public Statement {  // Verificar se o break esta dentro de um loop
 				INDENT(depth) std::cout << "break" << std::endl;
 			#endif
 		}	
-};
-
-class StatementList : public ASTNode {
-	public:
-	
-	const std::vector<ASTNode*>& getChildren()
-	{
-		return this->child;
-	}
-	
-	void walk( int depth ){
-		#ifdef DBG_PRINT_TREE
-			INDENT(depth) std::cout << "executando as instrucoes:" << std::endl;
-		#endif
-		for( size_t i = 0; i < child.size(); i++ ) child[i]->walk( depth+1 );
-	}
-};
-
-class VarDeclList : public ASTNode {	
-	public:
-		
-	void walk( int depth ){
-		#ifdef DBG_PRINT_TREE
-			INDENT(depth) std::cout << "declaracoes de variaveis:" << std::endl;
-		#endif
-		for( size_t i = 0; i < child.size(); i++ ) child[i]->walk( depth+1 );
-	}
 };
 
 class Param : public ASTNode{	
@@ -403,97 +514,6 @@ class ArgList : public ASTNode {
 	
 		std::vector<ASTNode*>& getChild() {
 			return this->child;
-		}
-};
-
-class Block : public Statement {
-	protected:
-		bool has_return;
-		DataType return_type;
-		bool return_error;
-		
-	public:
-		Block(VarDeclList* var_decl, StatementList* statements = NULL) {
-			child.resize(2);
-			child[0] = var_decl;
-			child[1] = statements;
-		}
-		
-		Block(StatementList* statements){
-			child.resize(2);
-			child[0] = NULL;
-			child[1] = statements;
-		}
-		
-		bool hasReturn() { return has_return; }
-		DataType getReturnType() { return return_type; }
-		bool hasError() { return return_error; }
-		
-		void walk( int depth ){
-			#ifdef  DBG_PRINT_TREE
-				INDENT(depth) std::cout << "iniciando bloco.." << std::endl;
-			#endif
-			
-			scope_lvl++; declared.push( "$" );
-			
-			this->has_return = false;
-				
-			if (child[0] != NULL) child[0]->walk(depth + 1);
-			
-			if (child[1] != NULL) {
-				 child[1]->walk(depth + 1);
-				
-				StatementList* stmt = static_cast<StatementList*>(child[1]);
-				const std::vector<ASTNode*> children = stmt->getChildren();
-				
-				Return* ret;
-				Block* block;
-				for (size_t i = 0; i < children.size(); ++i) {
-					ret = dynamic_cast<Return*>(children[i]);
-					
-					if (ret != NULL) {
-						if (!has_return) {
-							this->has_return = true;
-							this->return_type = ret->getReturnType();
-						}
-						else if (return_type != ret->getReturnType()) {
-							this->return_error = true;
-						}
-					}
-					else {
-						block = dynamic_cast<Block*>(children[i]);
-						if (block != NULL) {
-							if (block->hasReturn()) {
-								if (this->has_return) {
-									if (this->return_type != block->getReturnType()) {
-										this->return_error = true;
-									}
-								}
-								else {
-									this->return_error |= block->hasError();
-									this->return_type = block->getReturnType();
-								}
-							
-								this->has_return = true;
-							}
-						}
-					}
-				}
-			}
-			
-			#ifdef DBG_PRINT_TREE
-				INDENT(depth) std::cout << "finalizando o bloco.. aqui atualiza a tabela de simbolos" << std::endl;
-			#endif
-			scope_lvl--;
-			while( declared.top() != "$" ){
-				std::string var_ident = declared.top(); declared.pop();
-				#ifdef DBG_SYM_TAB
-					std::cout << "removendo " << getTypeName( var_symbol_tab[var_ident].top().first ) << " " << var_ident << std::endl;
-				#endif
-				var_symbol_tab[ var_ident ].pop();
-				if( var_symbol_tab[ var_ident ].empty() ) var_symbol_tab.erase( var_ident );
-			}
-			declared.pop();
 		}
 };
 
