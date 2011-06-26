@@ -1,26 +1,19 @@
-int x;
 
-int a() {
-	while (1 == 1) {
-		break;
-		
-		if (1 == 2) {
-			while ('z' < 'a') {
-				return a();
-				break;
-			}
+int a()
+{
+	if (1 == 1) { return 1; }
+	else return 0;
+	
+	{
+		{
+			if (1) return 0;
+			else return '1';
 		}
-		
-		break;
 	}
-	
-	if (1 == 2)	return '1';
-	else return 'a';
-	
 }
 
 int main(){
-	int x;
-	x = a();
+	
+	a();
 	return 1;
 }

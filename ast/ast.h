@@ -201,33 +201,28 @@ class Identifier : public ASTNode {
 
 class StatementList : public ASTNode {
 	public:
+		const std::vector<ASTNode*>& getChildren()
+		{
+			return this->child;
+		}
 	
-	const std::vector<ASTNode*>& getChildren()
-	{
-		return this->child;
-	}
-	
-	void walk(int depth) {
-		#ifdef DBG_PRINT_TREE
-			INDENT(depth) std::cout << "executando as instrucoes:" << std::endl;
-		#endif
-		for (size_t i = 0; i < child.size(); i++) child[i]->walk(depth + 1);
-	}
+		void walk(int depth) {
+			#ifdef DBG_PRINT_TREE
+				INDENT(depth) std::cout << "executando as instrucoes:" << std::endl;
+			#endif
+			for (size_t i = 0; i < child.size(); i++) child[i]->walk(depth + 1);
+		}
 };
 
 class VarDeclList : public ASTNode {	
 	public:
-<<<<<<< HEAD
 		
-=======
-	
->>>>>>> d5fef380f45de38b676bbeaf2301a65afb78db8c
-	void walk(int depth) {
-		#ifdef DBG_PRINT_TREE
-			INDENT(depth) std::cout << "declaracoes de variaveis:" << std::endl;
-		#endif
-		for (size_t i = 0; i < child.size(); i++) child[i]->walk(depth + 1);
-	}
+		void walk(int depth) {
+			#ifdef DBG_PRINT_TREE
+				INDENT(depth) std::cout << "declaracoes de variaveis:" << std::endl;
+			#endif
+			for (size_t i = 0; i < child.size(); i++) child[i]->walk(depth + 1);
+		}
 };
 
 class Statement : public ASTNode {
@@ -393,13 +388,8 @@ class If : public Statement, public HasBlock {
 			
 			child[0]->walk(depth + 1);
 			child[1]->walk(depth + 1);
-<<<<<<< HEAD
 			
 			Block* block = dynamic_cast<Block*>(child[1]);
-=======
-			//TODO -- nao precisa necessariamente ser um Block
-			Block* block = static_cast<Block*>(child[1]);
->>>>>>> d5fef380f45de38b676bbeaf2301a65afb78db8c
 			
 			if (block != NULL) {
 				if (block->hasBreak()) {
@@ -414,7 +404,11 @@ class If : public Statement, public HasBlock {
 			else if (dynamic_cast<Return*>(child[1]) != NULL) {
 				Return* ret = static_cast<Return*>(child[1]);
 				
-				this->has_return = true;
+				if (this->has_return && ret->getReturnType() != this->return_type) {
+					this->return_error = true;
+				}
+
+				this->has_return  = true;
 				this->return_type = ret->getReturnType();
 			}
 			else if (dynamic_cast<Break*>(child[1]) != NULL) {
@@ -423,20 +417,11 @@ class If : public Statement, public HasBlock {
 			}
 			
 			if (child[2] != NULL) {
-<<<<<<< HEAD
 				child[2]->walk(depth + 1);
-=======
-				//TODO -- nao precisa necessariamente ser um Block
-				block = static_cast<Block*>(child[2]);
-				block->walk(depth+1);
->>>>>>> d5fef380f45de38b676bbeaf2301a65afb78db8c
 				
 				block = dynamic_cast<Block*>(child[2]);
 			
 				if (block != NULL) {
-					
-					std::cout << "BLOX\n";
-					
 					if (block->hasBreak()) {
 						yyerror("O comando ``break'' só pode ser utilizado dentro de um laço de repetição.", 
 							node_location);
@@ -455,7 +440,7 @@ class If : public Statement, public HasBlock {
 					
 					if (this->has_return && ret->getReturnType() != this->return_type) {
 						this->return_error = true;
-					} 
+					}
 
 					this->has_return  = true;
 					this->return_type = ret->getReturnType();
@@ -464,7 +449,7 @@ class If : public Statement, public HasBlock {
 					yyerror("O comando ``break'' só pode ser utilizado dentro de um laço de repetição.", 
 						node_location);
 				}
-			}	
+			}
 		}
 };
 
