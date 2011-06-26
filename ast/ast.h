@@ -24,7 +24,6 @@ void yyerror(const char *, int);
 
 class Identifier;
 class FuncDecl;
-//struct Variable;
 class ConstExpr;
 
 enum DataType 
@@ -70,8 +69,9 @@ inline std::string getTypeName(DataType t)
 	}
 }
 
-inline std::string getOperText(Op oper ){
-	switch( oper ){
+inline std::string getOperText(Op oper)
+{
+	switch (oper) {
 		case PLUS: return "+";
 		case MINUS: return "-";
 		case TIMES: return "*";
@@ -87,8 +87,8 @@ inline std::string getOperText(Op oper ){
 	}
 }
 
-#define REP( i, N ) for( int i = 0; i < N; i++ )
-#define INDENT(depth) REP( i, depth) std::cout<< "\t";
+#define REP(i, N) for( int i = 0; i < N; i++ )
+#define INDENT(depth) REP(i, depth) std::cout<< "\t";
 
 class ASTNode {
 	protected:
@@ -101,12 +101,9 @@ class ASTNode {
 		
 		void set_location(int lineno) { node_location = lineno; }
 		
-		void reverse() { 
-			std::reverse(child.begin(), child.end()); 
-		}
+		void reverse() { std::reverse(child.begin(), child.end()); }
 		
-		virtual void walk( int depth ){
-			
+		virtual void walk(int depth) {
 			#ifdef DBG_PRINT_TREE
 				INDENT( depth )
 				std::cout << " em um ASTNode qualquer.." << std::endl;
@@ -119,12 +116,12 @@ class Expression : public ASTNode {
 	protected:
 		DataType expr_type;
 	public:
-		Expression( DataType dt ) : expr_type( dt ) {}
-		Expression() : expr_type( INT_T ) {}
+		Expression(DataType dt) : expr_type(dt) {}
+		Expression() : expr_type(INT_T) {}
 		
 		DataType getType() { return expr_type; }
 		
-		void walk( int depth ){
+		void walk(int depth) {
 			#ifdef DBG_PRINT_TREE
 				INDENT( depth )
 				std::cout << "generic expression tipo " << getTypeName(expr_type) << std::endl; // acho que nao deve imprimir isso
@@ -143,7 +140,7 @@ class Identifier : public ASTNode {
 			child[0] = array_pos;
 		}
 		
-		DataType getVarType(){ return var_type; }
+		DataType getVarType() { return var_type; }
 		std::string* getVarName() { return this->var_name; }
 		
 		void walk(int depth) {
@@ -193,7 +190,7 @@ class Identifier : public ASTNode {
 						yyerror(error.c_str(), node_location );	
 					}
 				}
-				// Se o identificador esta sendo acessado corretamente o tipo do identificador nao eh mais array?
+				// Se o identificador esta sendo acessado corretamente o tipo do identificador nao eh mais array
 				if( type == INT_ARRAY_T ) type = INT_T;
 				if( type == CHAR_ARRAY_T ) type = CHAR_T;
 			} 
@@ -220,7 +217,11 @@ class StatementList : public ASTNode {
 
 class VarDeclList : public ASTNode {	
 	public:
+<<<<<<< HEAD
 		
+=======
+	
+>>>>>>> d5fef380f45de38b676bbeaf2301a65afb78db8c
 	void walk(int depth) {
 		#ifdef DBG_PRINT_TREE
 			INDENT(depth) std::cout << "declaracoes de variaveis:" << std::endl;
@@ -231,7 +232,7 @@ class VarDeclList : public ASTNode {
 
 class Statement : public ASTNode {
 	public:
-		void walk( int depth ){
+		void walk(int depth) {
 			#ifdef DBG_PRINT_TREE
 				INDENT(depth) std::cout << "fake statement" << std::endl;
 			#endif
@@ -257,7 +258,7 @@ class HasBlock
 
 class Break : public Statement {
 	public:		
-		void walk(int depth){
+		void walk(int depth) {
 			#ifdef DBG_PRINT_TREE
 				INDENT(depth) std::cout << "break" << std::endl;
 			#endif
@@ -273,7 +274,7 @@ class Return : public Statement {
 		
 		DataType getReturnType() { return this->return_type; }
 		
-		void walk(int depth){	
+		void walk(int depth) {	
 			#ifdef DBG_PRINT_TREE
 				INDENT(depth)
 				std::cout << " return " << std::endl;
@@ -293,13 +294,13 @@ class Block : public Statement, public HasBlock {
 			child[1] = statements;
 		}
 		
-		Block(StatementList* statements){
+		Block(StatementList* statements) {
 			child.resize(2);
 			child[0] = NULL;
 			child[1] = statements;
 		}
 		
-		void walk(int depth){
+		void walk(int depth) {
 			#ifdef  DBG_PRINT_TREE
 				INDENT(depth) std::cout << "iniciando bloco.." << std::endl;
 			#endif
@@ -311,7 +312,7 @@ class Block : public Statement, public HasBlock {
 			if (child[0] != NULL) child[0]->walk(depth + 1);
 			
 			if (child[1] != NULL) {
-				 child[1]->walk(depth + 1);
+				child[1]->walk(depth + 1);
 				
 				StatementList* stmt = static_cast<StatementList*>(child[1]);
 				const std::vector<ASTNode*> children = stmt->getChildren();
@@ -386,14 +387,19 @@ class If : public Statement, public HasBlock {
 		void walk(int depth) {
 			#ifdef DBG_PRINT_TREE
 				INDENT(depth)
-				if( child.size() == 2 ) std::cout << "open If" << std::endl;
+				if( child[2] == NULL ) std::cout << "open If" << std::endl;
 				else std::cout << "elsed If" << std::endl;
 			#endif
 			
 			child[0]->walk(depth + 1);
 			child[1]->walk(depth + 1);
+<<<<<<< HEAD
 			
 			Block* block = dynamic_cast<Block*>(child[1]);
+=======
+			//TODO -- nao precisa necessariamente ser um Block
+			Block* block = static_cast<Block*>(child[1]);
+>>>>>>> d5fef380f45de38b676bbeaf2301a65afb78db8c
 			
 			if (block != NULL) {
 				if (block->hasBreak()) {
@@ -417,7 +423,13 @@ class If : public Statement, public HasBlock {
 			}
 			
 			if (child[2] != NULL) {
+<<<<<<< HEAD
 				child[2]->walk(depth + 1);
+=======
+				//TODO -- nao precisa necessariamente ser um Block
+				block = static_cast<Block*>(child[2]);
+				block->walk(depth+1);
+>>>>>>> d5fef380f45de38b676bbeaf2301a65afb78db8c
 				
 				block = dynamic_cast<Block*>(child[2]);
 			
@@ -471,7 +483,7 @@ class While : public Statement, public HasBlock {
 			
 			child[0]->walk(depth + 1);
 			child[1]->walk(depth + 1);
-			
+			// TODO -- Stmt não precisa ser necessariamente um Block..
 			Block* block = static_cast<Block*>(child[1]);
 			this->has_return   = block->hasReturn();
 			this->return_error = block->hasError();
@@ -757,9 +769,10 @@ class UnaryExpr : public Expression {
 					default: std::cout << " isso nao devia ser impresso" << std::endl;
 				}
 			#endif	
-			this->expr_type = ((Expression*)child[0])->getType();
-			// Checagem de tipo aqui?
+			
 			child[0]->walk( depth+1 );
+			this->expr_type = ((Expression*)child[0])->getType();
+			if( oper == MINUS && this->expr_type == CHAR_T ) yyerror( "Operador unário '-' não definido sobre variáveis do tipo char.", node_location );
 		}
 };
 
@@ -767,24 +780,28 @@ class BinaryExpr : public Expression {
 	protected:
 		Op oper;
 	public:
-		BinaryExpr( Op op, BinaryExpr* lhs, UnaryExpr* rhs ) : Expression( lhs->getType() ), oper( op ){
+		BinaryExpr(Op op, UnaryExpr* lhs, BinaryExpr* rhs) : Expression( lhs->getType() ), oper( op ) {
 			child.resize(2);
 			child[0] = lhs;
 			child[1] = rhs;
 		}
 		
-		void walk( int depth ){
+		void walk(int depth) {
 			#ifdef DBG_PRINT_TREE
 				INDENT(depth)
 				std::cout << "expressao binaria " << getOperText( oper ) << std::endl;
 			#endif
+			
 			child[0]->walk( depth+1 );
 			child[1]->walk( depth+1 );
-			if( oper != LOGICAL_OR && oper != LOGICAL_AND && ((BinaryExpr*)child[0])->getType() != ((UnaryExpr*)child[1])->getType() ){
+			
+			if( oper != LOGICAL_OR && oper != LOGICAL_AND && ((UnaryExpr*)child[0])->getType() != ((BinaryExpr*)child[1])->getType() ){
 				std::string error = "Em " + getOperText( oper ) + " tipos incompativeis. " + 
 									getTypeName( ((BinaryExpr*)child[0])->getType() ) + " e " + getTypeName( ((UnaryExpr*)child[1])->getType() );
 				yyerror( error.c_str(), node_location  );
-			} else this->expr_type = ((BinaryExpr*)child[0])->getType();
+			}
+			else this->expr_type = ((UnaryExpr*)child[0])->getType();
+			
 			#ifdef DBG_PRINT_TREE
 				INDENT(depth)
 				std::cout << getTypeName( this->getType() ) << " " << getOperText( oper ) << std::endl;
@@ -800,7 +817,7 @@ class Assignment : public Expression {
 			child[1] = rhs;
 		}
 	
-		void walk( int depth ){
+		void walk(int depth) {
 			#ifdef DBG_PRINT_TREE
 				INDENT(depth)
 				std::cout << "fazendo atribuicao " << std::endl;
@@ -817,7 +834,8 @@ class Assignment : public Expression {
 					" para " + getTypeName(lhs->getVarType()) + " na atribuição.";
 					
 				yyerror(error.c_str(), node_location );
-			} else this->expr_type = lhs->getVarType();
+			}
+			else this->expr_type = lhs->getVarType();
 		}
 };
 
@@ -825,7 +843,7 @@ class ConstExpr : public Expression {
 	protected:
 		std::string* value;
 	public:
-		ConstExpr( DataType dt, std::string* lvalue ) : Expression( dt ), value( lvalue ) {}
+		ConstExpr(DataType dt, std::string* lvalue) : Expression( dt ), value( lvalue ) {}
 		
 		int getIntValue() {
 			std::istringstream iss(*value);

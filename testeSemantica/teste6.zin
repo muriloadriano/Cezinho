@@ -43,4 +43,5 @@ int main(int a){
 write "o valor de x[2] e: ";
 write x[2];
 writeln;
+return 0;
 }

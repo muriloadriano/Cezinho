@@ -27,4 +27,5 @@ int main(int a){
         c=c+1;
     }
     writeln;
+	return 0;
 }
