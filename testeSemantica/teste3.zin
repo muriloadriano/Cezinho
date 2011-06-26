@@ -53,4 +53,5 @@ int main(){
      leitura();
      soma();
      imprime();
+	return 0;
 }

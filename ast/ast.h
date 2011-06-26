@@ -383,7 +383,7 @@ class If : public Statement, public HasBlock {
 		void walk(int depth) {
 			#ifdef DBG_PRINT_TREE
 				INDENT(depth)
-				if( child.size() == 2 ) std::cout << "open If" << std::endl;
+				if( child[2] == NULL ) std::cout << "open If" << std::endl;
 				else std::cout << "elsed If" << std::endl;
 			#endif
 			

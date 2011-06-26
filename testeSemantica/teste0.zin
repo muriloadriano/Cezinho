@@ -3,4 +3,5 @@ int x;
 int y;
 char z;
 int vet[10];
+return 0;
 }

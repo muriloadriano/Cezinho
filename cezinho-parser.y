@@ -148,7 +148,7 @@ Expr:
 ;
 
 BinaryExpr:
-		BinaryExpr BinOp UnaryExpr	{ $$ = new BinaryExpr( $2, (BinaryExpr*)$1, (UnaryExpr*)$3 ); $$->set_location( yylineno ); }
+		UnaryExpr BinOp BinaryExpr	{ $$ = new BinaryExpr( $2, (BinaryExpr*)$1, (UnaryExpr*)$3 ); $$->set_location( yylineno ); }
 		| UnaryExpr					{ $$ = $1; $$->set_location( yylineno ); }
 ;
 
