@@ -4,9 +4,7 @@ int a() {
 	while (1 == 1) {
 		if (1 == 2) {
 			while ('z' < 'a') {
-				{
-					return '1';
-				}
+				a();
 			}
 		}
 	}

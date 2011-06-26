@@ -522,17 +522,17 @@ class FuncDecl : public ASTNode {
 		DataType func_type;
 		std::string* func_name;
 	public:
-		FuncDecl( ParamList* params, Block* block ){
+		FuncDecl(ParamList* params, Block* block) {
 			child.resize(2);
 			child[0] = params;
 			child[1] = block;
 		}
 		
-		void setFuncName( std::string* func_ident ) { 
+		void setFuncName(std::string* func_ident) { 
 			func_name = func_ident;
 		}
 		
-		void setDataType( DataType dt ) { func_type = dt; }
+		void setDataType(DataType dt) { func_type = dt; }
 		
 		DataType getType() { return this->func_type; }
 		ParamList* getParamList() { return static_cast<ParamList*>(this->child[0]); }
@@ -559,7 +559,7 @@ class FuncDecl : public ASTNode {
 			
 			scope_lvl++; declared.push( "$" );
 			if (child[0] != NULL) {
-				child[0]->walk(depth+1);
+				child[0]->walk(depth + 1);
 			}
 			scope_lvl--;
 			
@@ -571,13 +571,19 @@ class FuncDecl : public ASTNode {
 					std::string error = "Na função ``" + *func_name + "'': "
 						+ " retornando um tipo diferente do tipo de retorno da função.";
 						
-					yyerror(error.c_str(), node_location );
+					yyerror(error.c_str(), node_location);
 				}
 				else if (block->getReturnType() != this->func_type) {
 					std::string error = "Na função ``" + *func_name + "'': "
 						+ " retornando um tipo diferente do tipo de retorno da função.";
-					yyerror(error.c_str(), node_location );
+					yyerror(error.c_str(), node_location);
 				}
+			}
+			else {
+				std::string error = "Na função ``" + *func_name + "'': "
+					+ "a função deve retornar o tipo " + getTypeName(this->func_type) + ", retornando nada.";
+					
+				yyerror(error.c_str(), node_location);
 			}
 			
 			while( declared.top() != "$" ){
