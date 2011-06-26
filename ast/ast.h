@@ -346,6 +346,10 @@ class Block : public Statement, public HasBlock {
 							
 								this->has_return = true;
 							}
+							
+							if (dynamic_cast<Block*>(children[i]) != NULL && block->hasBreak()) {
+								this->has_break = true;
+							}
 						}
 						else if (dynamic_cast<Break*>(children[i]) != NULL) {
 							this->has_break = true;

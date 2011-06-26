@@ -2,13 +2,22 @@ int x;
 
 int a() {
 	while (1 == 1) {
+		break;
+		
 		if (1 == 2) {
 			while ('z' < 'a') {
 				return a();
 				break;
 			}
+			
+			break;
 		}
+		
+		break;
 	}
+	
+	break;
+	
 }
 
 int main(){
