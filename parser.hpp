@@ -94,10 +94,10 @@ typedef union YYSTYPE
 /* Line 1685 of yacc.c  */
 #line 32 "cezinho-parser.y"
 
-	ASTNode *node;
+	ASTNode* node;
 	DataType datatype;
 	Op oper;
-	std::string *lxval;
+	std::string* lxval;
 
 
 

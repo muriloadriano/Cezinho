@@ -210,22 +210,22 @@ class StatementList : public ASTNode {
 		return this->child;
 	}
 	
-	void walk( int depth ){
+	void walk(int depth) {
 		#ifdef DBG_PRINT_TREE
 			INDENT(depth) std::cout << "executando as instrucoes:" << std::endl;
 		#endif
-		for( size_t i = 0; i < child.size(); i++ ) child[i]->walk( depth+1 );
+		for (size_t i = 0; i < child.size(); i++) child[i]->walk(depth + 1);
 	}
 };
 
 class VarDeclList : public ASTNode {	
 	public:
 		
-	void walk( int depth ){
+	void walk(int depth) {
 		#ifdef DBG_PRINT_TREE
 			INDENT(depth) std::cout << "declaracoes de variaveis:" << std::endl;
 		#endif
-		for( size_t i = 0; i < child.size(); i++ ) child[i]->walk( depth+1 );
+		for (size_t i = 0; i < child.size(); i++) child[i]->walk(depth + 1);
 	}
 };
 
@@ -269,7 +269,7 @@ class Return : public Statement {
 		Expression* return_value;
 		DataType return_type;
 	public:
-		Return(Expression* expr) : return_value( expr ) {}
+		Return(Expression* expr) : return_value(expr) {}
 		
 		DataType getReturnType() { return this->return_type; }
 		
@@ -278,8 +278,8 @@ class Return : public Statement {
 				INDENT(depth)
 				std::cout << " return " << std::endl;
 			#endif
-			return_value->walk(depth + 1);
 			
+			return_value->walk(depth + 1);
 			this->return_type = return_value->getType();
 		}
 };
@@ -393,29 +393,66 @@ class If : public Statement, public HasBlock {
 			child[0]->walk(depth + 1);
 			child[1]->walk(depth + 1);
 			
-			Block* block = static_cast<Block*>(child[1]);
+			Block* block = dynamic_cast<Block*>(child[1]);
 			
-			if (block->hasBreak()) {
-				yyerror("O comando ``break'' só pode ser utilizado dentro de um laço de repetição.", 
-					node_location);
-			}
-			
-			this->has_return   = block->hasReturn();
-			this->return_error = block->hasError();
-			this->return_type  = block->getReturnType();			
-			
-			if (child[2] != NULL) {
-				block = static_cast<Block*>(child[2]);
-				
+			if (block != NULL) {
 				if (block->hasBreak()) {
 					yyerror("O comando ``break'' só pode ser utilizado dentro de um laço de repetição.", 
 						node_location);
 				}
-				
-				this->has_return   |= block->hasReturn();
-				this->return_error |= block->hasError();
-				this->return_type   = block->getReturnType(); 
+			
+				this->has_return   = block->hasReturn();
+				this->return_error = block->hasError();
+				this->return_type  = block->getReturnType();
 			}
+			else if (dynamic_cast<Return*>(child[1]) != NULL) {
+				Return* ret = static_cast<Return*>(child[1]);
+				
+				this->has_return = true;
+				this->return_type = ret->getReturnType();
+			}
+			else if (dynamic_cast<Break*>(child[1]) != NULL) {
+				yyerror("O comando ``break'' só pode ser utilizado dentro de um laço de repetição.", 
+					node_location);
+			}
+			
+			if (child[2] != NULL) {
+				child[2]->walk(depth + 1);
+				
+				block = dynamic_cast<Block*>(child[2]);
+			
+				if (block != NULL) {
+					
+					std::cout << "BLOX\n";
+					
+					if (block->hasBreak()) {
+						yyerror("O comando ``break'' só pode ser utilizado dentro de um laço de repetição.", 
+							node_location);
+					}
+			
+					if (this->has_return && block->getReturnType() != this->return_type) {
+						this->return_error = true;
+					}
+			
+					this->has_return   |= block->hasReturn();
+					this->return_error |= block->hasError();
+					this->return_type = block->getReturnType();
+				}
+				else if (dynamic_cast<Return*>(child[2]) != NULL) {
+					Return* ret = static_cast<Return*>(child[2]);
+					
+					if (this->has_return && ret->getReturnType() != this->return_type) {
+						this->return_error = true;
+					} 
+
+					this->has_return  = true;
+					this->return_type = ret->getReturnType();
+				}
+				else if (dynamic_cast<Break*>(child[2]) != NULL) {
+					yyerror("O comando ``break'' só pode ser utilizado dentro de um laço de repetição.", 
+						node_location);
+				}
+			}	
 		}
 };
 

@@ -18,10 +18,10 @@
 #define TRACE printf("reduce at line %d\n", __LINE__);
 
 extern int yylex(void);
-void yyerror(const char *s);
-void yyerror(const char *s, int err_line);
+void yyerror(const char* s);
+void yyerror(const char* s, int err_line);
 extern int yylineno;
-extern FILE *yyin;
+extern FILE* yyin;
 
 std::string cz_new_line = "\n";
 
@@ -30,10 +30,10 @@ ASTNode* root;
 %}
 
 %union {
-	ASTNode *node;
+	ASTNode* node;
 	DataType datatype;
 	Op oper;
-	std::string *lxval;
+	std::string* lxval;
 }
 
 %token<lxval> MAIN
