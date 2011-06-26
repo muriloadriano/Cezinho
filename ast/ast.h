@@ -730,7 +730,7 @@ class BinaryExpr : public Expression {
 	protected:
 		Op oper;
 	public:
-		BinaryExpr(Op op, BinaryExpr* lhs, UnaryExpr* rhs) : Expression( lhs->getType() ), oper( op ) {
+		BinaryExpr(Op op, UnaryExpr* lhs, BinaryExpr* rhs) : Expression( lhs->getType() ), oper( op ) {
 			child.resize(2);
 			child[0] = lhs;
 			child[1] = rhs;
@@ -745,12 +745,12 @@ class BinaryExpr : public Expression {
 			child[0]->walk( depth+1 );
 			child[1]->walk( depth+1 );
 			
-			if( oper != LOGICAL_OR && oper != LOGICAL_AND && ((BinaryExpr*)child[0])->getType() != ((UnaryExpr*)child[1])->getType() ){
+			if( oper != LOGICAL_OR && oper != LOGICAL_AND && ((UnaryExpr*)child[0])->getType() != ((BinaryExpr*)child[1])->getType() ){
 				std::string error = "Em " + getOperText( oper ) + " tipos incompativeis. " + 
 									getTypeName( ((BinaryExpr*)child[0])->getType() ) + " e " + getTypeName( ((UnaryExpr*)child[1])->getType() );
 				yyerror( error.c_str(), node_location  );
 			}
-			else this->expr_type = ((BinaryExpr*)child[0])->getType();
+			else this->expr_type = ((UnaryExpr*)child[0])->getType();
 			
 			#ifdef DBG_PRINT_TREE
 				INDENT(depth)
