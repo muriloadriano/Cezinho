@@ -244,11 +244,24 @@ class HasBlock
 		bool has_return;
 		DataType return_type;
 		bool return_error;
+		bool has_break;
 	
 	public:	
+		HasBlock() : has_return(false), return_error(false), has_break(false) {}
+		
 		bool hasReturn() { return has_return; }
 		DataType getReturnType() { return return_type; }
-		bool hasError() { return return_error; }	
+		bool hasError() { return return_error; }
+		bool hasBreak() { return has_break; }	
+};
+
+class Break : public Statement {
+	public:		
+		void walk(int depth){
+			#ifdef DBG_PRINT_TREE
+				INDENT(depth) std::cout << "break" << std::endl;
+			#endif
+		}	
 };
 
 class Return : public Statement {
@@ -256,11 +269,11 @@ class Return : public Statement {
 		Expression* return_value;
 		DataType return_type;
 	public:
-		Return( Expression* expr ) : return_value( expr ) {}
+		Return(Expression* expr) : return_value( expr ) {}
 		
 		DataType getReturnType() { return this->return_type; }
 		
-		void walk( int depth ){	
+		void walk(int depth){	
 			#ifdef DBG_PRINT_TREE
 				INDENT(depth)
 				std::cout << " return " << std::endl;
@@ -286,7 +299,7 @@ class Block : public Statement, public HasBlock {
 			child[1] = statements;
 		}
 		
-		void walk( int depth ){
+		void walk(int depth){
 			#ifdef  DBG_PRINT_TREE
 				INDENT(depth) std::cout << "iniciando bloco.." << std::endl;
 			#endif
@@ -334,6 +347,9 @@ class Block : public Statement, public HasBlock {
 								this->has_return = true;
 							}
 						}
+						else if (dynamic_cast<Break*>(children[i]) != NULL) {
+							this->has_break = true;
+						}
 					}
 				}
 			}
@@ -374,12 +390,24 @@ class If : public Statement, public HasBlock {
 			child[1]->walk(depth + 1);
 			
 			Block* block = static_cast<Block*>(child[1]);
+			
+			if (block->hasBreak()) {
+				yyerror("O comando ``break'' só pode ser utilizado dentro de um laço de repetição.", 
+					node_location);
+			}
+			
 			this->has_return   = block->hasReturn();
 			this->return_error = block->hasError();
 			this->return_type  = block->getReturnType();			
 			
 			if (child[2] != NULL) {
 				block = static_cast<Block*>(child[2]);
+				
+				if (block->hasBreak()) {
+					yyerror("O comando ``break'' só pode ser utilizado dentro de um laço de repetição.", 
+						node_location);
+				}
+				
 				this->has_return   |= block->hasReturn();
 				this->return_error |= block->hasError();
 				this->return_type   = block->getReturnType(); 
@@ -437,15 +465,6 @@ class Write : public Statement {
 			#endif
 			child[0]->walk( depth+1 );
 		}
-};
-
-class Break : public Statement {  // Verificar se o break esta dentro de um loop..
-	public:		
-		void walk( int depth ){
-			#ifdef DBG_PRINT_TREE
-				INDENT(depth) std::cout << "break" << std::endl;
-			#endif
-		}	
 };
 
 class Param : public ASTNode{	
@@ -537,7 +556,7 @@ class FuncDecl : public ASTNode {
 		DataType getType() { return this->func_type; }
 		ParamList* getParamList() { return static_cast<ParamList*>(this->child[0]); }
 		
-		void walk( int depth ){
+		void walk(int depth){
 			
 			#ifdef DBG_PRINT_TREE
 				INDENT(depth)
@@ -564,7 +583,7 @@ class FuncDecl : public ASTNode {
 			scope_lvl--;
 			
 			Block* block = static_cast<Block*>(child[1]);
-			block->walk( depth+1 );
+			block->walk(depth + 1);
 			
 			if (block->hasReturn()) {
 				if (block->hasError()) {
@@ -584,6 +603,11 @@ class FuncDecl : public ASTNode {
 					+ "a função deve retornar o tipo " + getTypeName(this->func_type) + ", retornando nada.";
 					
 				yyerror(error.c_str(), node_location);
+			}
+			
+			if (block->hasBreak()) {
+				yyerror("O comando ``break'' só pode ser utilizado dentro de um laço de repetição.", 
+					node_location);
 			}
 			
 			while( declared.top() != "$" ){
