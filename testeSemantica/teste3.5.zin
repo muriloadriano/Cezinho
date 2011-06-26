@@ -22,7 +22,6 @@ int leitura(){
           write "]:";
           read y[i];
           i=i+1;
-          z=i; 
      }
      return(1);
 } 

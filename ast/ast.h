@@ -160,7 +160,7 @@ class Identifier : public ASTNode {
 			}
 			else {
 				std::string error = "O identificador ``" + *var_name + "'' não foi declarado nesse escopo.";
-				yyerror(error.c_str());
+				yyerror(error.c_str(), node_location );
 			}
 			
 			#ifdef DBG_SYM_TAB
@@ -176,7 +176,7 @@ class Identifier : public ASTNode {
 				if (child[0] == NULL ) {
 					std::string error = "Deve ser passada a posição do array ``" + *var_name
 						+ "'' a ser acessada.";
-					yyerror(error.c_str());
+					yyerror(error.c_str(), node_location );
 				}
 				else {
 					Expression* pos = static_cast<Expression*>(child[0]);
@@ -195,7 +195,7 @@ class Identifier : public ASTNode {
 					if (pos->getType() != INT_T) {
 						std::string error = "Erro ao acessar o array ``" + *var_name
 							+ "'': a posição deve ser uma expressão do tipo int.";
-						yyerror(error.c_str());	
+						yyerror(error.c_str(), node_location );	
 					}
 				}
 				// Se o identificador esta sendo acessado corretamente o tipo do identificador nao eh mais array?
@@ -376,7 +376,7 @@ class ParamList : public ASTNode {
 				param = static_cast<Param*>(child[i]);
 				if (var_symbol_tab.find(*param->getParamName()) != var_symbol_tab.end()) {
 					std::string error = "Parâmetro " + *param->getParamName() + " redeclarado.";
-					yyerror(error.c_str());
+					yyerror(error.c_str(), node_location );
 				}
 				
 				declared.push( *param->getParamName() );
@@ -529,12 +529,12 @@ class FuncDecl : public ASTNode {
 			
 			if (var_symbol_tab.find(*func_name) != var_symbol_tab.end()) {
 				std::string error = "A função " + *func_name + " nao pode ter o mesmo nome que uma variavel.";
-				yyerror( error.c_str() );
+				yyerror( error.c_str(), node_location  );
 			}
 			
 			if (func_symbol_tab.find(*func_name) != func_symbol_tab.end()) {
 				std::string error = "Redeclaração da função " + *func_name + ".";
-				yyerror(error.c_str());
+				yyerror(error.c_str(), node_location );
 			}
 			else {
 				func_symbol_tab[*func_name] = this;
@@ -554,12 +554,12 @@ class FuncDecl : public ASTNode {
 					std::string error = "Na função ``" + *func_name + "'': "
 						+ " retornando um tipo diferente do tipo de retorno da função.";
 						
-					yyerror(error.c_str());
+					yyerror(error.c_str(), node_location );
 				}
 				else if (block->getReturnType() != this->func_type) {
 					std::string error = "Na função ``" + *func_name + "'': "
 						+ " retornando um tipo diferente do tipo de retorno da função.";
-					yyerror(error.c_str());
+					yyerror(error.c_str(), node_location );
 				}
 			}
 			
@@ -603,20 +603,20 @@ class FuncCall : public Expression {
 					std::string error = "A função ``" + *func_identifier + 
 						"'' não recebe parâmetros.";
 					
-					yyerror(error.c_str());
+					yyerror(error.c_str(), node_location );
 				}
 				else if (func->getParamList() != NULL && args == NULL) {
 					std::string error = "A função ``" + *func_identifier + 
 						"'' recebe parâmetros.";
 					
-					yyerror(error.c_str());
+					yyerror(error.c_str(), node_location );
 				}
 				else if ((func->getParamList() != NULL && args != NULL) && 
 					(func->getParamList()->getChild().size() != args->getChild().size())) {
 					std::string error = "A função ``" + *func_identifier + 
 						"'' não recebe esse número de parâmetros.";
 					
-					yyerror(error.c_str());
+					yyerror(error.c_str(), node_location );
 				}
 				else if (func->getParamList() != NULL && args != NULL) {
 					
@@ -635,7 +635,7 @@ class FuncCall : public Expression {
 							std::string error = "Na chamada de função ``" + *func_identifier + 
 								"'': tipos de parâmetros incompatíveis.";
 								
-							yyerror(error.c_str());
+							yyerror(error.c_str(), node_location );
 						}
 					}
 				}
@@ -644,7 +644,7 @@ class FuncCall : public Expression {
 			}
 			else {
 				std::string error = "A função ``" + *func_identifier + "'' não existe.";
-				yyerror(error.c_str());
+				yyerror(error.c_str(), node_location );
 			}
 			
 		}
@@ -695,7 +695,7 @@ class BinaryExpr : public Expression {
 			if( oper != LOGICAL_OR && oper != LOGICAL_AND && ((BinaryExpr*)child[0])->getType() != ((UnaryExpr*)child[1])->getType() ){
 				std::string error = "Em " + getOperText( oper ) + " tipos incompativeis. " + 
 									getTypeName( ((BinaryExpr*)child[0])->getType() ) + " e " + getTypeName( ((UnaryExpr*)child[1])->getType() );
-				yyerror( error.c_str() );
+				yyerror( error.c_str(), node_location  );
 			} else this->expr_type = ((BinaryExpr*)child[0])->getType();
 			#ifdef DBG_PRINT_TREE
 				INDENT(depth)
@@ -728,7 +728,7 @@ class Assignment : public Expression {
 				std::string error = "Impossível converter " + getTypeName(rhs->getType()) +
 					" para " + getTypeName(lhs->getVarType()) + " na atribuição.";
 					
-				yyerror(error.c_str());
+				yyerror(error.c_str(), node_location );
 			} else this->expr_type = lhs->getVarType();
 		}
 };
@@ -790,11 +790,11 @@ class DeclIdentifier : public ASTNode {
 			
 			if( func_symbol_tab.find( *var_name ) != func_symbol_tab.end() ){
 				std::string error = "Redeclaração de " + *var_name + ".";
-				yyerror( error.c_str() );
+				yyerror( error.c_str(), node_location  );
 			}
 			if( var_symbol_tab.find( *var_name ) != var_symbol_tab.end() && var_symbol_tab[*var_name].top().second == scope_lvl ){
 				std::string error = "Redeclaracao da variavel " + *var_name + "."; 
-				yyerror( error.c_str() );
+				yyerror( error.c_str(), node_location  );
 			}
 			
 			#ifdef DBG_PRINT_TREE
@@ -807,7 +807,7 @@ class DeclIdentifier : public ASTNode {
 					std::string error = "Na declaração da variável ``" + *var_name
 						+ "'': O tipo do tamanho de um array deve ser um int.";
 					
-					yyerror(error.c_str());
+					yyerror(error.c_str(), node_location );
 				}
 				if( var_type == INT_T ) var_type = INT_ARRAY_T;
 				if( var_type == CHAR_T ) var_type = CHAR_ARRAY_T;
