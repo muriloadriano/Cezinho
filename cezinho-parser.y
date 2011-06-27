@@ -61,7 +61,7 @@ ASTNode* root;
 %left '*' '/'
 
 %type<datatype> Type
-%type<oper> UnaryOp BinOp AritmOp RelOp BooleanOp
+%type<oper> UnaryOp
 %type<node> Program Decls VarDecl FuncDecl ParamDecList Block VarDeclList StmtList Stmt Expr BinaryExpr UnaryExpr PostFixExpr ArgumentList Constant
 
 %start Program
@@ -148,8 +148,19 @@ Expr:
 ;
 
 BinaryExpr:
-		UnaryExpr BinOp BinaryExpr	{ $$ = new BinaryExpr( $2, (UnaryExpr*)$1, (BinaryExpr*)$3 ); $$->set_location( yylineno ); }
-		| UnaryExpr					{ $$ = $1; $$->set_location( yylineno ); }
+		BinaryExpr '+' BinaryExpr			{ $$ = new BinaryExpr( PLUS, (UnaryExpr*)$1, (BinaryExpr*)$3 ); $$->set_location( yylineno ); }
+		| BinaryExpr '-' BinaryExpr			{ $$ = new BinaryExpr( MINUS, (UnaryExpr*)$1, (BinaryExpr*)$3 ); $$->set_location( yylineno ); }
+		| BinaryExpr '*' BinaryExpr			{ $$ = new BinaryExpr( TIMES, (UnaryExpr*)$1, (BinaryExpr*)$3 ); $$->set_location( yylineno ); }
+		| BinaryExpr '/' BinaryExpr			{ $$ = new BinaryExpr( DIVIDES, (UnaryExpr*)$1, (BinaryExpr*)$3 ); $$->set_location( yylineno ); }
+		| BinaryExpr '<' BinaryExpr			{ $$ = new BinaryExpr( LESS, (UnaryExpr*)$1, (BinaryExpr*)$3 ); $$->set_location( yylineno ); }
+		| BinaryExpr '>' BinaryExpr			{ $$ = new BinaryExpr( GREATER, (UnaryExpr*)$1, (BinaryExpr*)$3 ); $$->set_location( yylineno ); }
+		| BinaryExpr EQUAL BinaryExpr		{ $$ = new BinaryExpr( EQUALS, (UnaryExpr*)$1, (BinaryExpr*)$3 ); $$->set_location( yylineno ); }
+		| BinaryExpr NEQUAL BinaryExpr		{ $$ = new BinaryExpr( NOT_EQUAL, (UnaryExpr*)$1, (BinaryExpr*)$3 ); $$->set_location( yylineno ); }
+		| BinaryExpr LESSEQ BinaryExpr		{ $$ = new BinaryExpr( LESS_EQUAL, (UnaryExpr*)$1, (BinaryExpr*)$3 ); $$->set_location( yylineno ); }
+		| BinaryExpr GREATEREQ BinaryExpr	{ $$ = new BinaryExpr( GREATER_EQUAL, (UnaryExpr*)$1, (BinaryExpr*)$3 ); $$->set_location( yylineno ); }
+		| BinaryExpr OR BinaryExpr			{ $$ = new BinaryExpr( LOGICAL_OR, (UnaryExpr*)$1, (BinaryExpr*)$3 ); $$->set_location( yylineno ); }
+		| BinaryExpr AND BinaryExpr			{ $$ = new BinaryExpr( LOGICAL_AND, (UnaryExpr*)$1, (BinaryExpr*)$3 ); $$->set_location( yylineno ); }
+		| UnaryExpr							{ $$ = $1; $$->set_location( yylineno ); }
 ;
 
 UnaryExpr:
@@ -181,34 +192,6 @@ UnaryOp:
 		'-'							{ $$ = MINUS; }
 		| '!'						{ $$ = NOT; }
 ;
-
-BinOp:
-		BooleanOp					{ $$ = $1; }
-		| RelOp						{ $$ = $1; }
-		| AritmOp					{ $$ = $1; }
-;
-
-AritmOp:
-		'+'							{ $$ = PLUS; }
-		| '-'						{ $$ = MINUS; }
-		| '*'						{ $$ = TIMES; }
-		| '/'						{ $$ = DIVIDES; }
-;
-
-RelOp:
-		'<'							{ $$ = LESS; }
-		| '>'						{ $$ = GREATER; }
-		| EQUAL						{ $$ = EQUALS; }
-		| NEQUAL					{ $$ = NOT_EQUAL; }
-		| LESSEQ					{ $$ = LESS_EQUAL; }
-		| GREATEREQ					{ $$ = GREATER_EQUAL; }
-;
-
-BooleanOp:
-		OR							{ $$ = LOGICAL_OR; }
-		| AND						{ $$ = LOGICAL_AND; }
-;
-
 
 %%
 
