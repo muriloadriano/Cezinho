@@ -84,6 +84,7 @@ inline std::string getOperText(Op oper)
 		case GREATER_EQUAL: return ">=";
 		case LOGICAL_OR: return "||";
 		case LOGICAL_AND: return "&&";
+		case NOT: return "!";
 	}
 }
 
@@ -135,7 +136,7 @@ class Identifier : public ASTNode {
 		DataType var_type;
 		std::string* var_name;
 	public:
-		Identifier(std::string* identifier, Expression* array_pos = NULL) : var_name(identifier) {
+		Identifier(std::string* identifier, ASTNode* array_pos = NULL) : var_name(identifier) {
 			child.resize(1);
 			child[0] = array_pos;
 		}
@@ -265,7 +266,7 @@ class Return : public Statement {
 		Expression* return_value;
 		DataType return_type;
 	public:
-		Return(Expression* expr) : return_value(expr) {}
+		Return(ASTNode* expr) : return_value(static_cast<Expression*>(expr)) {}
 		
 		DataType getReturnType() { return this->return_type; }
 		
@@ -372,7 +373,7 @@ class Block : public Statement, public HasBlock {
 
 class If : public Statement, public HasBlock {
 	public:
-		If(Expression* expr, Statement* stmt, Statement* elsestmt = NULL) {
+		If(ASTNode* expr, ASTNode* stmt, ASTNode* elsestmt = NULL) {
 			child.resize(3);
 			child[0] = expr; 
 			child[1] = stmt;
@@ -455,7 +456,7 @@ class If : public Statement, public HasBlock {
 
 class While : public Statement, public HasBlock {
 	public:
-		While(Expression* expr, Statement* stmt) {
+		While(ASTNode* expr, ASTNode* stmt) {
 			child.resize(2);
 			child[0] = expr; child[1] = stmt;
 		}
@@ -502,7 +503,7 @@ class Read : public Statement {
 class Write : public Statement {
 	public:
 		Write(){}
-		Write( Expression* expr ){ child.resize( 1 ); child[0] = expr; }
+		Write( ASTNode* expr ){ child.resize( 1 ); child[0] = expr; }
 		
 		void walk( int depth ){
 			#ifdef DBG_PRINT_TREE
@@ -587,7 +588,7 @@ class FuncDecl : public ASTNode {
 		DataType func_type;
 		std::string* func_name;
 	public:
-		FuncDecl(ParamList* params, Block* block) {
+		FuncDecl(ASTNode* params, ASTNode* block) {
 			child.resize(2);
 			child[0] = params;
 			child[1] = block;
@@ -674,7 +675,7 @@ class FuncCall : public Expression {
 		std::string* func_identifier;
 	public:
 		
-		FuncCall( std::string* func_name, ArgList* args = NULL) 
+		FuncCall( std::string* func_name, ASTNode* args = NULL) 
 		{ 	
 			child.resize(1); 
 			child[0] = args;
@@ -747,7 +748,7 @@ class UnaryExpr : public Expression {
 	protected:
 		Op oper;
 	public:
-		UnaryExpr( Op op, UnaryExpr* expr ) : Expression( expr->getType() ), oper( op ) {
+		UnaryExpr( Op op, ASTNode* expr ) : Expression( static_cast<Expression*>(expr)->getType() ), oper( op ) {
 			child.resize(1);
 			child[0] = expr;
 		}
@@ -773,7 +774,7 @@ class BinaryExpr : public Expression {
 	protected:
 		Op oper;
 	public:
-		BinaryExpr(Op op, UnaryExpr* lhs, BinaryExpr* rhs) : Expression( lhs->getType() ), oper( op ) {
+		BinaryExpr(Op op, ASTNode* lhs, ASTNode* rhs) : Expression( static_cast<Expression*>(lhs)->getType() ), oper( op ) {
 			child.resize(2);
 			child[0] = lhs;
 			child[1] = rhs;
@@ -788,12 +789,15 @@ class BinaryExpr : public Expression {
 			child[0]->walk( depth+1 );
 			child[1]->walk( depth+1 );
 			
-			if( oper != LOGICAL_OR && oper != LOGICAL_AND && ((UnaryExpr*)child[0])->getType() != ((BinaryExpr*)child[1])->getType() ){
+			if( oper != LOGICAL_OR && oper != LOGICAL_AND && 
+				static_cast<Expression*>(child[0])->getType() != static_cast<Expression*>(child[1])->getType() )
+			{
 				std::string error = "Em " + getOperText( oper ) + " tipos incompativeis. " + 
-									getTypeName( ((BinaryExpr*)child[0])->getType() ) + " e " + getTypeName( ((UnaryExpr*)child[1])->getType() );
+									getTypeName( ((Expression*)child[0])->getType() ) + " e " + 
+									getTypeName( static_cast<Expression*>(child[1])->getType() );
 				yyerror( error.c_str(), node_location  );
 			}
-			else this->expr_type = ((UnaryExpr*)child[0])->getType();
+			else this->expr_type = static_cast<Expression*>(child[0])->getType();
 			
 			#ifdef DBG_PRINT_TREE
 				INDENT(depth)
@@ -804,7 +808,7 @@ class BinaryExpr : public Expression {
 
 class Assignment : public Expression {
 	public:
-		Assignment(Identifier* lhs, Expression* rhs) : Expression(lhs->getVarType()) {
+		Assignment(ASTNode* lhs, ASTNode* rhs) : Expression( static_cast<Identifier*>(lhs)->getVarType()) {
 			child.resize(2);
 			child[0] = lhs;
 			child[1] = rhs;
@@ -879,7 +883,7 @@ class DeclIdentifier : public ASTNode {
 		std::string* var_name;
 	public:
 		DeclIdentifier(std::string* identifier) : var_name(identifier) { var_size = NULL; }
-		DeclIdentifier(std::string* identifier, ConstExpr* array_size) : var_name(identifier), var_size(array_size) {}
+		DeclIdentifier(std::string* identifier, ASTNode* array_size) : var_name(identifier), var_size( static_cast<ConstExpr*>(array_size)) {}
 		
 		std::string* getVarName() { return this->var_name; }
 		int getVarSize() { return this->var_size->getIntValue(); }

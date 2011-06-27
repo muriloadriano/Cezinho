@@ -3,7 +3,7 @@ default: all
 all:
 	bison -o parser.cpp -y -d cezinho-parser.y
 	flex -o lexer.cpp cezinho-scanner.l
-	g++ *.cpp -o cezinho 
+	g++ *.cpp -O2 -o cezinho 
 	
 clean:
 	rm *.cpp *.hpp cezinho
@@ -12,9 +12,9 @@ clean:
 debug:
 	bison -o parser.cpp -y -d cezinho-parser.y
 	flex -o lexer.cpp cezinho-scanner.l
-	g++ *.cpp -o cezinho -DDBG_PRINT_TREE
+	g++ *.cpp -o cezinho -O2 -DDBG_PRINT_TREE
 
 debug2:
 	bison -o parser.cpp -y -d cezinho-parser.y
 	flex -o lexer.cpp cezinho-scanner.l
-	g++ *.cpp -o cezinho -DDBG_SYM_TAB -DDBG_PRINT_TREE
+	g++ *.cpp -o cezinho -O2 -Wall -DDBG_SYM_TAB -DDBG_PRINT_TREE

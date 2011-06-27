@@ -52,7 +52,7 @@ ASTNode* root;
 %token<lxval> LITCHAR
 %token<lxval> LITSTRING
 
-%left '='
+%right '='
 %left OR
 %left AND
 %nonassoc EQUAL NEQUAL
@@ -69,128 +69,198 @@ ASTNode* root;
 %%
 
 Program:
-		Decls								{	root = $1; root->reverse();
-												scope_lvl = 0; var_symbol_tab.clear(); func_symbol_tab.clear();
-												while(!declared.empty())declared.pop(); declared.push("$");
+		Decls								{	
+												root = $1;
+												root->reverse();
+												scope_lvl = 0;
+												var_symbol_tab.clear();
+												func_symbol_tab.clear();
+												while(!declared.empty()) declared.pop();
 												root->walk(0);
 											}
 ;
 
 Decls:
-		Type VarDecl ';' Decls				{ $$ = $4; ((VarDecl*)$2)->setDataType( $1 ); $$->add( $2 ); $$->set_location( yylineno ); }
-		| Type ID FuncDecl Decls 			{ $$ = $4; ((FuncDecl*)$3)->setFuncName( $2 ); ((FuncDecl*)$3)->setDataType( $1 ); $$->add( $3 ); $$->set_location( yylineno ); }
-		| Type MAIN FuncDecl				{ $$ = new ASTNode(); ((FuncDecl*)$3)->setFuncName( $2 ); ((FuncDecl*)$3)->setDataType( $1 );	$$->add( $3 ); $$->set_location( yylineno ); }
+		Type VarDecl ';' Decls				{
+												$$ = $4;
+												static_cast<VarDecl*>($2)->setDataType($1);
+												$$->add( $2 );
+												$$->set_location(yylineno);
+											}
+		| Type ID FuncDecl Decls 			{ 
+												$$ = $4;
+												static_cast<FuncDecl*>($3)->setFuncName($2);
+												static_cast<FuncDecl*>($3)->setDataType($1); 
+												$$->add( $3 );
+												$$->set_location( yylineno ); 
+											}
+		| Type MAIN FuncDecl				{
+												$$ = new ASTNode();
+												static_cast<FuncDecl*>($3)->setFuncName( $2 ); 
+												static_cast<FuncDecl*>($3)->setDataType( $1 );
+												$$->add( $3 );
+												$$->set_location( yylineno );
+											}
 ;
 
 VarDecl:
-		ID									{ $$ = new VarDecl(); $$->add( new DeclIdentifier($1) ); $$->set_location( yylineno ); }
-		| ID '[' Constant ']'				{ $$ = new VarDecl(); $$->add( new DeclIdentifier($1, (ConstExpr*)$3 ) ); $$->set_location( yylineno ); }
-		| VarDecl ',' ID					{ $$ = $1; $$->add( new DeclIdentifier($3) ); $$->set_location( yylineno ); }
-		| VarDecl ',' ID '[' Constant ']'	{ $$ = $1; $$->add( new DeclIdentifier($3, (ConstExpr*)$5 ) ); $$->set_location( yylineno ); }
+		ID									{
+												$$ = new VarDecl();
+												$$->add( new DeclIdentifier($1) );
+												$$->set_location( yylineno );
+											}
+		| ID '[' Constant ']'				{ 
+												$$ = new VarDecl();
+												$$->add( new DeclIdentifier($1, $3) );
+												$$->set_location( yylineno );
+											}
+		| VarDecl ',' ID					{ 
+												$$ = $1;
+												$$->add( new DeclIdentifier($3) ); 
+												$$->set_location( yylineno );
+											}
+		| VarDecl ',' ID '[' Constant ']'	{
+												$$ = $1;
+												$$->add( new DeclIdentifier($3, $5) ); 
+												$$->set_location( yylineno );
+											}
 ;
 
 FuncDecl:
-		'(' ParamDecList ')' Block			{ $$ = new FuncDecl( (ParamList*)$2, (Block*)$4 ); $$->set_location( yylineno ); }
-		| '(' ')' Block						{ $$ = new FuncDecl( NULL, (Block*)$3 ); $$->set_location( yylineno ); }
+		'(' ParamDecList ')' Block			{	$$ = new FuncDecl( $2, $4 );				$$->set_location( yylineno ); }
+		| '(' ')' Block						{	$$ = new FuncDecl( NULL, $3 );				$$->set_location( yylineno ); }
 ;
 
 ParamDecList:
-		Type ID								{ $$ = new ParamList(); $$->add( new Param( $1, $2 ) ); $$->set_location( yylineno ); }
-		| Type ID '[' ']'					{ $$ = new ParamList(); $$->add( new Param( ($1==INT_T)?INT_ARRAY_T:CHAR_ARRAY_T, $2 ) ); $$->set_location( yylineno ); }
-		| ParamDecList ',' Type ID			{ $$ = $1; $$->add( new Param( $3, $4 ) ); $$->set_location( yylineno );	}
-		| ParamDecList ',' Type ID '[' ']'	{ $$ = $1; $$->add( new Param( ($3==INT_T)?INT_ARRAY_T:CHAR_ARRAY_T, $4 ) ); $$->set_location( yylineno ); }
+		Type ID								{
+												$$ = new ParamList();
+												$$->add( new Param( $1, $2 ) );
+												$$->set_location( yylineno );
+											}
+		| Type ID '[' ']'					{
+												$$ = new ParamList();
+												$$->add( new Param( ($1==INT_T)?INT_ARRAY_T:CHAR_ARRAY_T, $2 ) );
+												$$->set_location( yylineno );
+											}
+		| ParamDecList ',' Type ID			{	$$ = $1;	$$->add( new Param( $3, $4 ) );	$$->set_location( yylineno ); }
+		| ParamDecList ',' Type ID '[' ']'	{
+												$$ = $1;
+												$$->add( new Param( ($3==INT_T)?INT_ARRAY_T:CHAR_ARRAY_T, $4 ) );
+												$$->set_location( yylineno );
+											}
 ;
 
 Block:
-		'{' VarDeclList StmtList '}'		{ $$ = new Block( (VarDeclList*)$2, (StatementList*)$3 ); $$->set_location( yylineno ); }
-		| '{' VarDeclList '}'				{ $$ = new Block( (VarDeclList*)$2 ); $$->set_location( yylineno ); }
-		| '{' StmtList '}'					{ $$ = new Block( (StatementList*)$2 ); $$->set_location( yylineno ); }
+		'{' VarDeclList StmtList '}'		{
+												$$ = new Block( static_cast<VarDeclList*>($2), static_cast<StatementList*>($3) );
+												$$->set_location( yylineno );
+											}
+		| '{' VarDeclList '}'				{
+												$$ = new Block( static_cast<VarDeclList*>($2) );
+												$$->set_location( yylineno );
+											}
+		| '{' StmtList '}'					{	$$ = new Block( static_cast<StatementList*>($2) );
+												$$->set_location( yylineno );
+											}
 ;
 
 VarDeclList:
-		Type VarDecl ';'					{ $$ = new VarDeclList(); ((VarDecl*)$2)->setDataType($1); $$->add($2); $$->set_location( yylineno ); }
-		| VarDeclList Type VarDecl ';'		{ $$ = $1; ((VarDecl*)$3)->setDataType($2); $$->add( $3 ); $$->set_location( yylineno );  }
+		Type VarDecl ';'					{ 
+												$$ = new VarDeclList();
+												static_cast<VarDecl*>($2)->setDataType($1);
+												$$->add($2);
+												$$->set_location( yylineno );
+											}
+		| VarDeclList Type VarDecl ';'		{
+												$$ = $1;
+												static_cast<VarDecl*>($3)->setDataType($2);
+												$$->add( $3 );
+												$$->set_location( yylineno );
+											}
 ;
 
 Type:
-		INT							{ $$ = INT_T;  }
-		| CHAR						{ $$ = CHAR_T; }
+		INT									{ $$ = INT_T; }
+		| CHAR								{ $$ = CHAR_T; }
 ;
 
 StmtList:
-		Stmt						{ $$ = new StatementList(); $$->add( $1 ); $$->set_location( yylineno ); }
-		| StmtList Stmt				{ $$ = $1; $$->add( $2 ); $$->set_location( yylineno ); }
+		Stmt								{	$$ = new StatementList();	$$->add( $1 );	$$->set_location( yylineno ); }
+		| StmtList Stmt						{	$$ = $1;					$$->add( $2 );	$$->set_location( yylineno ); }
 ;
 
 Stmt:
-		';'									{ $$ = new Statement(); $$->set_location( yylineno ); }
-		| Expr ';'							{ $$ = $1; $$->set_location( yylineno ); }
-		| RETURN Expr ';'					{ $$ = new Return( (Expression*)$2 ); $$->set_location( yylineno ); }
-		| READ ID ';'						{ $$ = new Read( new Identifier( $2 ) ); $$->set_location( yylineno ); }
-		| READ ID '[' Expr ']' ';'			{ $$ = new Read( new Identifier( $2, (Expression*)$4) ); $$->set_location( yylineno ); }
-		| WRITE Expr ';'					{ $$ = new Write( (Expression*)$2 ); $$->set_location( yylineno ); }
-		| WRITELN ';'						{ $$ = new Write( new ConstExpr( CHAR_ARRAY_T, &cz_new_line ) ); $$->set_location( yylineno ); }
-		| BREAK ';'							{ $$ = new Break(); $$->set_location( yylineno ); }
-		| IF '(' Expr ')' Stmt				{ $$ = new If( (Expression*)$3, (Statement*)$5 ); $$->set_location( yylineno ); }
-		| IF '(' Expr ')' Stmt ELSE Stmt	{ $$ = new If( (Expression*)$3, (Statement*)$5, (Statement*)$7 ); $$->set_location( yylineno ); }
-		| WHILE '(' Expr ')' Stmt			{ $$ = new While( (Expression*)$3, (Statement*)$5 ); $$->set_location( yylineno ); }
-		| Block								{ $$ = $1; $$->set_location( yylineno ); }
+		';'									{	$$ = new Statement();						$$->set_location( yylineno ); }
+		| Expr ';'							{	$$ = $1; }
+		| RETURN Expr ';'					{	$$ = new Return( $2 );						$$->set_location( yylineno ); }
+		| READ ID ';'						{	$$ = new Read( new Identifier( $2 ) );		$$->set_location( yylineno ); }
+		| READ ID '[' Expr ']' ';'			{	$$ = new Read( new Identifier( $2, $4) );	$$->set_location( yylineno ); }
+		| WRITE Expr ';'					{	$$ = new Write( $2 );						$$->set_location( yylineno ); }
+		| WRITELN ';'						{ 
+												$$ = new Write( new ConstExpr( CHAR_ARRAY_T, &cz_new_line ) );
+												$$->set_location( yylineno );
+											}
+		| BREAK ';'							{ 	$$ = new Break();							$$->set_location( yylineno ); }
+		| IF '(' Expr ')' Stmt				{	$$ = new If( $3, $5 );						$$->set_location( yylineno ); }
+		| IF '(' Expr ')' Stmt ELSE Stmt	{	$$ = new If( $3, $5, $7 );					$$->set_location( yylineno ); }
+		| WHILE '(' Expr ')' Stmt			{	$$ = new While( $3, $5 );					$$->set_location( yylineno ); }
+		| Block								{	$$ = $1; }
 ;
 
 Expr:
-		UnaryExpr '=' Expr			{ 	
-										Identifier* aux = dynamic_cast<Identifier*>($1);
-										if( aux == NULL ) yyerror( "Lado esquerdo de uma atribuicao deve ser um identificador." );
-										else $$ = new Assignment(aux, (Expression*)$3);
-										$$->set_location( yylineno );
-									}
-		| BinaryExpr				{ $$ = $1; $$->set_location( yylineno ); }
+		UnaryExpr '=' Expr					{ 	
+												Identifier* aux = dynamic_cast<Identifier*>($1);
+												if( aux == NULL ) yyerror( "Lado esquerdo de uma atribuicao deve ser um identificador." );
+												else $$ = new Assignment(aux, $3);
+												$$->set_location( yylineno );
+											}
+		| BinaryExpr						{ $$ = $1; }
 ;
 
 BinaryExpr:
-		BinaryExpr '+' BinaryExpr			{ $$ = new BinaryExpr( PLUS, (UnaryExpr*)$1, (BinaryExpr*)$3 ); $$->set_location( yylineno ); }
-		| BinaryExpr '-' BinaryExpr			{ $$ = new BinaryExpr( MINUS, (UnaryExpr*)$1, (BinaryExpr*)$3 ); $$->set_location( yylineno ); }
-		| BinaryExpr '*' BinaryExpr			{ $$ = new BinaryExpr( TIMES, (UnaryExpr*)$1, (BinaryExpr*)$3 ); $$->set_location( yylineno ); }
-		| BinaryExpr '/' BinaryExpr			{ $$ = new BinaryExpr( DIVIDES, (UnaryExpr*)$1, (BinaryExpr*)$3 ); $$->set_location( yylineno ); }
-		| BinaryExpr '<' BinaryExpr			{ $$ = new BinaryExpr( LESS, (UnaryExpr*)$1, (BinaryExpr*)$3 ); $$->set_location( yylineno ); }
-		| BinaryExpr '>' BinaryExpr			{ $$ = new BinaryExpr( GREATER, (UnaryExpr*)$1, (BinaryExpr*)$3 ); $$->set_location( yylineno ); }
-		| BinaryExpr EQUAL BinaryExpr		{ $$ = new BinaryExpr( EQUALS, (UnaryExpr*)$1, (BinaryExpr*)$3 ); $$->set_location( yylineno ); }
-		| BinaryExpr NEQUAL BinaryExpr		{ $$ = new BinaryExpr( NOT_EQUAL, (UnaryExpr*)$1, (BinaryExpr*)$3 ); $$->set_location( yylineno ); }
-		| BinaryExpr LESSEQ BinaryExpr		{ $$ = new BinaryExpr( LESS_EQUAL, (UnaryExpr*)$1, (BinaryExpr*)$3 ); $$->set_location( yylineno ); }
-		| BinaryExpr GREATEREQ BinaryExpr	{ $$ = new BinaryExpr( GREATER_EQUAL, (UnaryExpr*)$1, (BinaryExpr*)$3 ); $$->set_location( yylineno ); }
-		| BinaryExpr OR BinaryExpr			{ $$ = new BinaryExpr( LOGICAL_OR, (UnaryExpr*)$1, (BinaryExpr*)$3 ); $$->set_location( yylineno ); }
-		| BinaryExpr AND BinaryExpr			{ $$ = new BinaryExpr( LOGICAL_AND, (UnaryExpr*)$1, (BinaryExpr*)$3 ); $$->set_location( yylineno ); }
-		| UnaryExpr							{ $$ = $1; $$->set_location( yylineno ); }
+		BinaryExpr '+' BinaryExpr			{ $$ = new BinaryExpr( PLUS, $1, $3 ); 			$$->set_location( yylineno ); }
+		| BinaryExpr '-' BinaryExpr			{ $$ = new BinaryExpr( MINUS, $1, $3 ); 		$$->set_location( yylineno ); }
+		| BinaryExpr '*' BinaryExpr			{ $$ = new BinaryExpr( TIMES, $1, $3 ); 		$$->set_location( yylineno ); }
+		| BinaryExpr '/' BinaryExpr			{ $$ = new BinaryExpr( DIVIDES, $1, $3 );		$$->set_location( yylineno ); }
+		| BinaryExpr '<' BinaryExpr			{ $$ = new BinaryExpr( LESS, $1, $3 ); 			$$->set_location( yylineno ); }
+		| BinaryExpr '>' BinaryExpr			{ $$ = new BinaryExpr( GREATER, $1, $3 ); 		$$->set_location( yylineno ); }
+		| BinaryExpr EQUAL BinaryExpr		{ $$ = new BinaryExpr( EQUALS, $1, $3 ); 		$$->set_location( yylineno ); }
+		| BinaryExpr NEQUAL BinaryExpr		{ $$ = new BinaryExpr( NOT_EQUAL, $1, $3 ); 	$$->set_location( yylineno ); }
+		| BinaryExpr LESSEQ BinaryExpr		{ $$ = new BinaryExpr( LESS_EQUAL, $1, $3 );	$$->set_location( yylineno ); }
+		| BinaryExpr GREATEREQ BinaryExpr	{ $$ = new BinaryExpr( GREATER_EQUAL, $1, $3 ); $$->set_location( yylineno ); }
+		| BinaryExpr OR BinaryExpr			{ $$ = new BinaryExpr( LOGICAL_OR, $1, $3 ); 	$$->set_location( yylineno ); }
+		| BinaryExpr AND BinaryExpr			{ $$ = new BinaryExpr( LOGICAL_AND, $1, $3 );	$$->set_location( yylineno ); }
+		| UnaryExpr							{ $$ = $1; }
 ;
 
 UnaryExpr:
-		UnaryOp UnaryExpr			{ $$ = new UnaryExpr( $1, (UnaryExpr*)$2 ); $$->set_location( yylineno ); }
-		| PostFixExpr				{ $$ = $1; $$->set_location( yylineno );  }
+		UnaryOp UnaryExpr					{ $$ = new UnaryExpr( $1, $2 );					$$->set_location( yylineno ); }
+		| PostFixExpr						{ $$ = $1; }
 ;
 
 PostFixExpr:
-		ID '(' ArgumentList ')'		{ $$ = new FuncCall( $1, (ArgList*)$3 ); $$->set_location( yylineno ); }
-		| ID '(' ')'				{ $$ = new FuncCall( $1 ); $$->set_location( yylineno ); }
-		| ID						{ $$ = new Identifier( $1 ); $$->set_location( yylineno ); }
-		| ID '[' Expr ']'			{ $$ = new Identifier( $1, (Expression*)$3 ); $$->set_location( yylineno ); }
-		| Constant					{ $$ = $1; $$->set_location( yylineno ); }
-		| '(' Expr ')'				{ $$ = $2; $$->set_location( yylineno ); }
+		ID '(' ArgumentList ')'				{ $$ = new FuncCall( $1, $3 );					$$->set_location( yylineno ); }
+		| ID '(' ')'						{ $$ = new FuncCall( $1 );						$$->set_location( yylineno ); }
+		| ID								{ $$ = new Identifier( $1 );					$$->set_location( yylineno ); }
+		| ID '[' Expr ']'					{ $$ = new Identifier( $1, $3 );				$$->set_location( yylineno ); }
+		| Constant							{ $$ = $1; }
+		| '(' Expr ')'						{ $$ = $2; }
 ;
 
 Constant:
-		LITINT						{ $$ = new ConstExpr( INT_T, $1 ); $$->set_location( yylineno ); }
-		| LITCHAR					{ $$ = new ConstExpr( CHAR_T, $1 ); $$->set_location( yylineno ); }
-		| LITSTRING					{ $$ = new ConstExpr( CHAR_ARRAY_T, $1 ); $$->set_location( yylineno ); }
+		LITINT								{ $$ = new ConstExpr( INT_T, $1 );				$$->set_location( yylineno ); }
+		| LITCHAR							{ $$ = new ConstExpr( CHAR_T, $1 );				$$->set_location( yylineno ); }
+		| LITSTRING							{ $$ = new ConstExpr( CHAR_ARRAY_T, $1 );		$$->set_location( yylineno ); }
 ;
 
 ArgumentList:
-		Expr						{ $$ = new ArgList(); $$->add( $1 ); $$->set_location( yylineno ); }
-		| ArgumentList ',' Expr		{ $$ = $1; $$->add( $3 ); $$->set_location( yylineno ); }
+		Expr								{ $$ = new ArgList();	$$->add( $1 );			$$->set_location( yylineno ); }
+		| ArgumentList ',' Expr				{ $$ = $1;				$$->add( $3 );			$$->set_location( yylineno ); }
 ;
 
 UnaryOp:
-		'-'							{ $$ = MINUS; }
-		| '!'						{ $$ = NOT; }
+		'-'									{ $$ = MINUS; }
+		| '!'								{ $$ = NOT; }
 ;
 
 %%
