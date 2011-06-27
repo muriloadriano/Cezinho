@@ -6,7 +6,7 @@ int main(int a){
     char x, y,z;
     read c; read b; read d; read e;
     read x; read y; read z;
-    if(c>= (c+d+b+e)/4 &&(x<y && y<z) || (x>=z && z!=y))
+    if((c>= ((c+d+b+e)/4)) && (((x<y) && (y<z)) || ((x>=z) && (z!=y))))
 		write "ok ";
     else 
        write "nao serve";

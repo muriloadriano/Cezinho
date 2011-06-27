@@ -468,11 +468,19 @@ class While : public Statement, public HasBlock {
 			
 			child[0]->walk(depth + 1);
 			child[1]->walk(depth + 1);
-			// TODO -- Stmt não precisa ser necessariamente um Block..
-			Block* block = static_cast<Block*>(child[1]);
-			this->has_return   = block->hasReturn();
-			this->return_error = block->hasError();
-			this->return_type  = block->getReturnType();
+			
+			Block* block = dynamic_cast<Block*>(child[1]);
+			if (block != NULL) {
+				this->has_return   = block->hasReturn();
+				this->return_error = block->hasError();
+				this->return_type  = block->getReturnType();
+			}
+			else if (dynamic_cast<Return*>(child[1]) != NULL) {
+				Return* ret = static_cast<Return*>(child[1]);
+				
+				this->has_return  = true;
+				this->return_type = ret->getReturnType();
+			}
 		}
 };
 
